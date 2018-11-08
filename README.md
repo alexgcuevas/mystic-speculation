@@ -1,4 +1,1 @@
-# mystic-speculation
-g79ds capstone project
-
-very early stages. please dont judge me
+![title](http://gatherer.wizards.com/Handlers/Image.ashx?multiverseid=126156&type=card)
