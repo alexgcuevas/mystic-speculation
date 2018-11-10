@@ -2,6 +2,10 @@ import numpy as np
 import pandas as pd
 import json, requests, pickle, time
 from bs4 import BeautifulSoup
+# trying slimit parser
+from slimit import ast
+from slimit.parser import Parser
+from slimit.visitors import nodevisitor
 
 def load_card_page(page):
     '''
@@ -77,9 +81,46 @@ def MVP_features(cards_df):
     #     clean_cards[feat] = np.nan
     return cards_df[MVP_features]
 
-if __name__ == "__main__":
+def card_price_history(setname, cardname):
+    # Turn card data into soup
+    link = 'https://www.mtgprice.com/sets/' + '_'.join(setname.split()) + '/' + '_'.join(cardname.split())
+    soup = BeautifulSoup(requests.get(link).content, 'html.parser')
+
+    # GET RESULTS
+    text_to_find = 'var results = ['
+    history=[]
+    for script in soup.findAll('script', type='text/javascript'):
+        if text_to_find in script.text:
+            parser = Parser()
+            tree = parser.parse(script.text)
+            for node in nodevisitor.visit(tree):
+                if isinstance(node, ast.Assign) and getattr(node.left, 'value', '') == "\"data\"":
+                    for prices in node.right.items:
+                        history.append([prices.items[0].value,prices.items[1].value])
+                    break
+    return np.array(history)
+
+def sets_price_history(sets, all_cards_df):
+    set_dict = {}
+    for setname in sets:
+        print(setname)
+        cards = all_cards_df[all_cards_df['set_name'] == setname]['name'].values
+        card_dict = {}
+        for cardname in cards:
+            if '/' in cardname:
+                cardname = cardname.split('/')[0]
+            print(cardname)
+            try:
+                history = card_price_history(setname, cardname)
+                card_dict[cardname] = history
+            except:
+                print('{} not a set on MTGPrice'.format(setname))
+                break
+        set_dict[setname] = card_dict
+    return set_dict
+
+def load_card_features(n=1320):
     # read n pages (1320 total as of 11/8/2018)
-    n = 1320
     cards = pd.DataFrame()
     for n in range(n):
         page = load_card_page(n+1)
@@ -93,3 +134,10 @@ if __name__ == "__main__":
     MVP_data = MVP_features(cards)
     print(' ~~~ writing to csv ~~~ ')
     MVP_data.to_csv(path_or_buf='all_vintage_cards.csv')
+
+if __name__ == "__main__":
+    all_cards_df = pd.read_csv('all_vintage_cards.csv')
+    sets = list(all_cards_df['set_name'].unique())
+    set_dict = sets_price_history(sets, all_cards_df)
+    with open("price_scrape.p", 'wb') as output_file:
+        pickle.dump(set_dict, output_file)
