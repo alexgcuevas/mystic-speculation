@@ -141,7 +141,7 @@ def load_card_features(n=1320):
 
 if __name__ == "__main__":
     all_cards_df = pd.read_csv('all_vintage_cards.csv')
-    sets = [list(all_cards_df['set_name'].unique())]
+    sets = list(all_cards_df['set_name'].unique())
     set_dict = sets_price_history(sets, all_cards_df)
     with open("all_vintage_price_scrape.p", 'wb') as output_file:
         pickle.dump(set_dict, output_file)
