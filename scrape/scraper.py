@@ -106,16 +106,20 @@ def sets_price_history(sets, all_cards_df):
         print(setname)
         cards = all_cards_df[all_cards_df['set_name'] == setname]['name'].values
         card_dict = {}
-        for cardname in cards:
+        for i, cardname in enumerate(cards):
             if '/' in cardname:
                 cardname = cardname.split('/')[0]
-            print(cardname)
+            print('Scraping {}'.format(cardname))
             try:
                 history = card_price_history(setname, cardname)
                 card_dict[cardname] = history
+                print('successfully scraped {}'.format(cardname))
             except:
-                print('{} not a set on MTGPrice'.format(setname))
-                break
+                if i == 1:
+                    print('SET FAIL!\nfailed set: {}'.format(setname))
+                    break
+                else:
+                    print('CARD FAIL!\nfailed card: {}'.format(cardname))                
         set_dict[setname] = card_dict
     return set_dict
 
@@ -137,7 +141,7 @@ def load_card_features(n=1320):
 
 if __name__ == "__main__":
     all_cards_df = pd.read_csv('all_vintage_cards.csv')
-    sets = list(all_cards_df['set_name'].unique())
+    sets = [list(all_cards_df['set_name'].unique())]
     set_dict = sets_price_history(sets, all_cards_df)
-    with open("price_scrape.p", 'wb') as output_file:
+    with open("all_vintage_price_scrape.p", 'wb') as output_file:
         pickle.dump(set_dict, output_file)
