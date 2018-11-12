@@ -7,24 +7,6 @@ from slimit import ast
 from slimit.parser import Parser
 from slimit.visitors import nodevisitor
 
-def load_card_page(page):
-    '''
-    Gets a page of scryfall cards from their API and formats it into a dataframe, removing unwanted cards.
-    Input:
-        page is a positive integer representing the page number
-    Output:
-        legal_cards, a pandas dataframe of all cards on the page 
-    '''
-    link = 'https://api.scryfall.com/cards?page='+str(page)
-    response = requests.get(link)
-    cards = response.json()['data']
-    cards_df = pd.DataFrame(cards)
-    
-    # Filters not legal in vintage (tokens, joke cards, conspiracies, etc.), only english cards
-    legal_cards = cards_df[(cards_df['legalities'].apply(lambda x: x['vintage']!='not_legal')) & (cards_df['lang']=='en')]
-    legal_cards.set_index('id', inplace=True)
-    return legal_cards
-
 def MVP_features(cards_df):
     '''
     Filters a dataframe of cards for only those cards and features to be included in
@@ -74,6 +56,48 @@ def MVP_features(cards_df):
         'set_search_uri',
     ]
     return cards_df[MVP_features]
+
+def load_card_page(page):
+    '''
+    Gets a page of scryfall cards from their API and formats it into a dataframe, removing unwanted cards.
+    Input:
+        page is a positive integer representing the page number
+    Output:
+        legal_cards, a pandas dataframe of all cards on the page 
+    '''
+    link = 'https://api.scryfall.com/cards?page='+str(page)
+    response = requests.get(link)
+    cards = response.json()['data']
+    cards_df = pd.DataFrame(cards)
+    
+    # Filters not legal in vintage (tokens, joke cards, conspiracies, etc.), only english cards
+    legal_cards = cards_df[(cards_df['legalities'].apply(lambda x: x['vintage']!='not_legal')) & (cards_df['lang']=='en')]
+    legal_cards.set_index('id', inplace=True)
+    return legal_cards
+
+def load_card_features(n=1320):
+    '''
+    Loads cards from scryfall API, up to n pages (scryfall cards are paginated), and selecting
+    only the desired card features.
+    Input:
+        n is number of scryfall pages to search - default is all of them.
+    Output:
+        None; writes the extracted cards to csv file. 
+    '''
+    # read n pages (1320 total as of 11/8/2018)
+    cards = pd.DataFrame()
+    for n in range(n):
+        page = load_card_page(n+1)
+        cards = pd.concat([cards, page], sort=True)
+        print('just scraped this page: {}'.format(n+1))
+        print('this many cards so far: {}'.format(cards.shape[0]))
+        # sleep for 10 ms per scryfall API guidelines
+        time.sleep(0.01)
+    print('FINAL CARD TALLY: {}'.format(cards.shape[0]))
+    print(' ~~~ cleaning everything now ~~~ ')
+    MVP_data = MVP_features(cards)
+    print(' ~~~ writing to csv ~~~ ')
+    MVP_data.to_csv(path_or_buf='all_vintage_cards.csv')
 
 def card_price_history(setname, cardname):
     '''
@@ -131,30 +155,6 @@ def sets_price_history(sets, all_cards_df):
                     print('CARD SCRAPE FAIL!\nfailed at #{0} card: {1}'.format(i, cardname))                
         set_dict[setname] = card_dict
     return set_dict
-
-def load_card_features(n=1320):
-    '''
-    Loads cards from scryfall API, up to n pages (scryfall cards are paginated), and selecting
-    only the desired card features.
-    Input:
-        n is number of scryfall pages to search - default is all of them.
-    Output:
-        None; writes the extracted cards to csv file. 
-    '''
-    # read n pages (1320 total as of 11/8/2018)
-    cards = pd.DataFrame()
-    for n in range(n):
-        page = load_card_page(n+1)
-        cards = pd.concat([cards, page], sort=True)
-        print('just scraped this page: {}'.format(n+1))
-        print('this many cards so far: {}'.format(cards.shape[0]))
-        # sleep for 10 ms per scryfall API guidelines
-        time.sleep(0.01)
-    print('FINAL CARD TALLY: {}'.format(cards.shape[0]))
-    print(' ~~~ cleaning everything now ~~~ ')
-    MVP_data = MVP_features(cards)
-    print(' ~~~ writing to csv ~~~ ')
-    MVP_data.to_csv(path_or_buf='all_vintage_cards.csv')
 
 if __name__ == "__main__":
     all_cards_df = pd.read_csv('all_vintage_cards.csv')
