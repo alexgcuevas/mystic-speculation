@@ -13,12 +13,13 @@ def load_card_page(page):
     Input:
         page is a positive integer representing the page number
     Output:
-        Returns a pandas dataframe of all cards on the page 
+        legal_cards, a pandas dataframe of all cards on the page 
     '''
     link = 'https://api.scryfall.com/cards?page='+str(page)
     response = requests.get(link)
     cards = response.json()['data']
     cards_df = pd.DataFrame(cards)
+    
     # Filters not legal in vintage (tokens, joke cards, conspiracies, etc.), only english cards
     legal_cards = cards_df[(cards_df['legalities'].apply(lambda x: x['vintage']!='not_legal')) & (cards_df['lang']=='en')]
     legal_cards.set_index('id', inplace=True)
@@ -29,11 +30,10 @@ def MVP_features(cards_df):
     Filters a dataframe of cards for only those cards and features to be included in
     MVP model.
     Input:
-        Dataframe of cards, with card features as columns
+        cards_df, dataframe of cards with card features as columns
     Output:
-        Cleaned dataframe
+        dataframe containing only the desired features from the input cards
     '''
-    # Features to keep
     MVP_features = [
         'name',
         'set_name',
@@ -73,15 +73,16 @@ def MVP_features(cards_df):
         'rulings_uri',
         'set_search_uri',
     ]
-
-    # # Fills features with nan if not present in cards
-    # clean_feats = set(clean_cards.columns)
-    # extra_feats = set(MVP_features) - clean_feats
-    # for feat in extra_feats:
-    #     clean_cards[feat] = np.nan
     return cards_df[MVP_features]
 
 def card_price_history(setname, cardname):
+    '''
+    Scrapes price history of card from MTGPrice.com, using javascript parser
+    Input:
+        Setname and cardname are strings, generally taken from Scryfall API.
+    Output:
+        A numpy array of price history, each 'row' in the form [timestamp, price]
+    '''
     # Turn card data into soup
     link = 'https://www.mtgprice.com/sets/' + '_'.join(setname.split()) + '/' + '_'.join(cardname.split())
     soup = BeautifulSoup(requests.get(link).content, 'html.parser')
@@ -101,29 +102,45 @@ def card_price_history(setname, cardname):
     return np.array(history)
 
 def sets_price_history(sets, all_cards_df):
+    '''
+    Scrapes price data from MTGPrice.com for all cards in a given list of sets.
+    Input:
+        sets is a list of sets to scrape, all_cards_df is a pandas dataframe of cards
+    Output:
+        set_dict is a dictionary with keys being magic set names from 'sets', and values
+        being dictionaries of (cards, price history) kv pairs for each card in the set.
+    '''
     set_dict = {}
     for setname in sets:
-        print(setname)
+        print('Scraping set from MTGPrice.com: {}'.format(setname))
         cards = all_cards_df[all_cards_df['set_name'] == setname]['name'].values
         card_dict = {}
         for i, cardname in enumerate(cards):
             if '/' in cardname:
                 cardname = cardname.split('/')[0]
-            print('Scraping {}'.format(cardname))
+            print('Scraping card from MTGPrice.com: {}'.format(cardname))
             try:
                 history = card_price_history(setname, cardname)
                 card_dict[cardname] = history
-                print('successfully scraped {}'.format(cardname))
+                print('successfully scraped {0} from {1}'.format(cardname, setname))
             except:
                 if i == 1:
-                    print('SET FAIL!\nfailed set: {}'.format(setname))
+                    print('SET SCRAPE FAIL!\nfailed set: {}'.format(setname))
                     break
                 else:
-                    print('CARD FAIL!\nfailed card: {}'.format(cardname))                
+                    print('CARD SCRAPE FAIL!\nfailed at #{0} card: {1}'.format(i, cardname))                
         set_dict[setname] = card_dict
     return set_dict
 
 def load_card_features(n=1320):
+    '''
+    Loads cards from scryfall API, up to n pages (scryfall cards are paginated), and selecting
+    only the desired card features.
+    Input:
+        n is number of scryfall pages to search - default is all of them.
+    Output:
+        None; writes the extracted cards to csv file. 
+    '''
     # read n pages (1320 total as of 11/8/2018)
     cards = pd.DataFrame()
     for n in range(n):
