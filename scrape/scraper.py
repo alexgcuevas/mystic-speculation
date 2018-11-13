@@ -8,6 +8,7 @@ from slimit.parser import Parser
 from slimit.visitors import nodevisitor
 # connect to postgresql database
 from sqlalchemy import create_engine
+import psycopg2
 
 def MVP_features(cards_df):
     '''
@@ -165,9 +166,67 @@ def load_to_postgres(cardname, setname, price_dict):
     price_df.to_sql('sets', engine)
     pass
 
-if __name__ == "__main__":
+def pickle_all_sets():
     all_cards_df = pd.read_csv('all_vintage_cards.csv')
     sets = list(all_cards_df['set_name'].unique())
     set_dict = sets_price_history(sets, all_cards_df)
     with open("all_vintage_price_scrape.p", 'wb') as output_file:
         pickle.dump(set_dict, output_file)
+
+def record_price_history(connection, cardname, setname, history):
+    # Create table if doesn't exit
+    connection.execute("CREATE TABLE IF NOT EXISTS price_history (cardname text, setname text, timestamp text, price float)")
+
+    # populate card history, ignoring repeat prices and minor variations
+    last_prices = [0.0,0.0]
+    for (timestamp, price) in history:
+        price = round(float(price), 1)
+        if price != last_prices[0] and price != last_prices[1]:
+            mystic.execute("INSERT INTO price_history (cardname, setname, timestamp, price) values ('{0}', '{1}', '{2}', {3})".format(cardname,
+                                                                                                                                setname,
+                                                                                                                                timestamp,
+                                                                                                                                price))
+            last_prices = [price, last_prices[0]]
+
+def record_price_histories(connection, card_dict):
+    pass
+
+def connect_mystic():
+    '''
+    Connects to mystic-speculation database, returns connection object
+    '''
+    # Define database info
+    hostname = 'mystic-speculation.cwxojtlggspu.us-east-1.rds.amazonaws.com'
+    port = '5432'
+    dbname = 'mystic_speculation'
+
+    # load username and pw information for database
+    with open('login.txt', 'r') as login_info:
+        username = login_info.readline().strip()
+        password = login_info.readline().strip()
+
+    # connect to database with sqlalchemy engine
+    db_string = 'postgres://{0}:{1}@{2}:{3}/{4}'.format(username, password, hostname, port, dbname)
+    engine = create_engine(db_string)
+    connection = engine.connect()
+    return connection
+
+if __name__ == "__main__":
+    mystic = connect_mystic()
+
+    # test recording function
+    cardname = 'Arcanis the Omnipotent'
+    setname = 'Onslaught'
+    history = card_price_history(setname, cardname)
+    record_price_history(mystic, cardname, setname, history)
+    results = mystic.execute("select * from price_history")
+    for r in results:
+        print(r)
+    # delete test
+    mystic.execute("delete from price_history *")
+    results = mystic.execute("select * from price_history")
+    print('nothing here if deleted successfully:')
+    for r in results:
+        print(r)
+    
+    mystic.close()
