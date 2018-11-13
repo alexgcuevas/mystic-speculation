@@ -6,6 +6,8 @@ from bs4 import BeautifulSoup
 from slimit import ast
 from slimit.parser import Parser
 from slimit.visitors import nodevisitor
+# connect to postgresql database
+from sqlalchemy import create_engine
 
 def MVP_features(cards_df):
     '''
@@ -147,6 +149,7 @@ def sets_price_history(sets, all_cards_df):
                 history = card_price_history(setname, cardname)
                 card_dict[cardname] = history
                 print('successfully scraped {0} from {1}'.format(cardname, setname))
+                time.sleep()
             except:
                 if i == 1:
                     print('SET SCRAPE FAIL!\nfailed set: {}'.format(setname))
@@ -155,6 +158,12 @@ def sets_price_history(sets, all_cards_df):
                     print('CARD SCRAPE FAIL!\nfailed at #{0} card: {1}'.format(i, cardname))                
         set_dict[setname] = card_dict
     return set_dict
+
+def load_to_postgres(cardname, setname, price_dict):
+    price_df = pd.DataFrame(price_dict)
+    engine = create_engine('postgresql://mystic-speculation.cwxojtlggspu.us-east-1.rds.amazonaws.com:password?@localhost:5432/alexgcuevas')
+    price_df.to_sql('sets', engine)
+    pass
 
 if __name__ == "__main__":
     all_cards_df = pd.read_csv('all_vintage_cards.csv')
