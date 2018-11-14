@@ -19,6 +19,7 @@ nlp / text analysis:
     mana abilities
     difficulty to cast (mana, 'additional cost')
     card similarity
+    activated vs triggered abilities 
 
 independent / dependent transforms:
     card-card similarity, nearest neighbors
