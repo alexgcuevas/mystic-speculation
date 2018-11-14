@@ -229,7 +229,7 @@ def record_sets_price_history(connection, tablename, sets, cards_df):
                     first_try = False
                 elif not first_try:
                     print('\t\tSET SCRAPE FAIL!\nfailed set: {}'.format(setname))
-                    fail_dict[setname].add(set(cards))
+                    fail_dict[setname].update(set(cards))
                     break
                 print('\t\tCARD SCRAPE FAIL!\nfailed at #{0} card: {1}'.format(i+1, cardname))
                 fail_dict[setname].add(cardname)
