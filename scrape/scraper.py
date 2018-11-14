@@ -206,11 +206,17 @@ def record_sets_price_history(connection, tablename, sets, cards_df):
         for i, cardname in enumerate(cards):
             if '/' in cardname:
                 cardname = cardname.split('/')[0]
-            print('\tScraping card {0} from MTGPrice.com: {1}'.format(i, cardname))
+            print('\tScraping card {0} from {1}: {2}'.format(i, setname, cardname))
             # Attempt to scrape card
             try:
                 history = card_price_history(setname, cardname)
-                print('\tSuccessfully scraped {0} from {1}'.format(cardname, setname))
+                print('\tSuccessfully scraped {0} from {1}'.format(cardname, setname))      
+                try:
+                    record_price_history(connection, tablename, setname, cardname, history)
+                    print('\tSuccessfully recorded {0} ({1}) into database'.format(cardname, setname))
+                    count += 1
+                except:
+                    print('\tFailed to record {0} ({1}) into database'.format(cardname, setname))
             except:
                 if i == 0:
                     print('\t\tSET SCRAPE FAIL!\nfailed set: {}'.format(setname))
@@ -218,12 +224,7 @@ def record_sets_price_history(connection, tablename, sets, cards_df):
                 else:
                     print('\t\tCARD SCRAPE FAIL!\nfailed at #{0} card: {1}'.format(i+1, cardname)) 
             # Attempt to record history into database
-            try:
-                record_price_history(connection, tablename, setname, cardname, history)
-                print('\tSuccessfully recorded {0} ({1}) into database'.format(cardname, setname))
-                count += 1
-            except:
-                print('\tFailed to record {0} ({1}) into database'.format(cardname, setname))
+
                            
         print('Finished attempt at scraping set: {}'.format(setname))
         print('Total cards in set: {0}\nTotal cards recorded: {1}'.format(total, count))
