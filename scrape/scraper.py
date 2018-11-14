@@ -203,6 +203,7 @@ def record_sets_price_history(connection, tablename, sets, cards_df):
         cards = cards_df[cards_df['set_name'] == setname]['name'].values
         total = cards.shape[0]
         count = 0
+        first_try = True
         for i, cardname in enumerate(cards):
             if '/' in cardname:
                 cardname = cardname.split('/')[0]
@@ -219,10 +220,11 @@ def record_sets_price_history(connection, tablename, sets, cards_df):
                     print('\tFailed to record {0} ({1}) into database'.format(cardname, setname))
             except:
                 if i == 0:
+                    first_try = False
+                elif not first_try:
                     print('\t\tSET SCRAPE FAIL!\nfailed set: {}'.format(setname))
                     break
-                else:
-                    print('\t\tCARD SCRAPE FAIL!\nfailed at #{0} card: {1}'.format(i+1, cardname)) 
+                print('\t\tCARD SCRAPE FAIL!\nfailed at #{0} card: {1}'.format(i+1, cardname)) 
             # Attempt to record history into database
 
                            
