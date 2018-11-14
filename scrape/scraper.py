@@ -2,6 +2,7 @@ import numpy as np
 import pandas as pd
 import json, requests, pickle, time
 from bs4 import BeautifulSoup
+from collections import defaultdict
 # trying slimit parser
 from slimit import ast
 from slimit.parser import Parser
