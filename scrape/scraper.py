@@ -249,7 +249,7 @@ if __name__ == "__main__":
     # record_price_history(mystic, sets[0], cardname, history)
     
     # Record sets into database
-    #record_sets_price_history(mystic, sets, cards_df)
+    record_sets_price_history(mystic, sets, cards_df)
     
     # Show test results
     results = mystic.execute("select * from price_history")
