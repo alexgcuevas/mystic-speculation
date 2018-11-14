@@ -270,6 +270,7 @@ if __name__ == "__main__":
     all_cards_df = pd.read_csv('all_vintage_cards.csv')
     
     # Define target rarity, sets to scrape
+
     rarities = ['mythic', 'rare', 'uncommon', 'common']
     sets = list(all_cards_df['set_name'].unique())
     
