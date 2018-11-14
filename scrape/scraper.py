@@ -197,7 +197,11 @@ def record_sets_price_history(connection, tablename, sets, cards_df):
         tablename: name of the target SQL table in the database
         sets: list of sets to search through and add to database, starting from most recent
         cards_df: dataframe of cards, including columns for name and set_name
+    Output:
+        Dictionary of failed cards and their sets
     '''
+    fail_dict = defaultdict(set)
+
     for setname in sets:
         print('Scraping set from MTGPrice.com: {}'.format(setname))
         cards = cards_df[cards_df['set_name'] == setname]['name'].values
@@ -218,18 +222,23 @@ def record_sets_price_history(connection, tablename, sets, cards_df):
                     count += 1
                 except:
                     print('\tFailed to record {0} ({1}) into database'.format(cardname, setname))
+                    fail_dict[setname].add(cardname)
             except:
                 if i == 0:
                     first_try = False
                 elif not first_try:
                     print('\t\tSET SCRAPE FAIL!\nfailed set: {}'.format(setname))
+                    fail_dict[setname].add(set(cards))
                     break
-                print('\t\tCARD SCRAPE FAIL!\nfailed at #{0} card: {1}'.format(i+1, cardname)) 
+                print('\t\tCARD SCRAPE FAIL!\nfailed at #{0} card: {1}'.format(i+1, cardname))
+                fail_dict[setname].add(cardname)
             # Attempt to record history into database
 
                            
         print('Finished attempt at scraping set: {}'.format(setname))
         print('Total cards in set: {0}\nTotal cards recorded: {1}'.format(total, count))
+    
+    return fail_dict
 
 def connect_mystic():
     '''
@@ -264,8 +273,11 @@ def record_prices_by_rarity(connection, rarities, sets, cards_df):
     '''
     for rarity in rarities:
         cards_of_rarity_df = cards_df[cards_df['rarity']==rarity]
-        tablename = rarity+'_price_history'
-        record_sets_price_history(connection, tablename, sets, cards_of_rarity_df)
+        # Temp name to not overwrite previous scraping attempts
+        tablename = rarity+'_price_history_2'
+        fail_dict = record_sets_price_history(connection, tablename, sets, cards_of_rarity_df)
+        with open("{}_fails.p".format(rarity), 'wb') as output_file:
+            pickle.dump(fail_dict, output_file)
 
 def clear_rarity_tables():
     rarities = ['mythic', 'rare', 'uncommon', 'common']
