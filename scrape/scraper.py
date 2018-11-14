@@ -167,18 +167,24 @@ def pickle_all_sets():
     with open("all_vintage_price_scrape.p", 'wb') as output_file:
         pickle.dump(set_dict, output_file)
 
-def record_price_history(connection, setname, cardname, history):
+def record_price_history(connection, tablename, setname, cardname, history):
+    '''
+    Takes card price history and loads it into given database and table
+    '''
+    # create table if it doesn't already exist
+    connection.execute("CREATE TABLE IF NOT EXISTS {} (cardname text, setname text, timestamp text, price float)".format(tablename))
+    
     # populate card history, ignoring repeat prices and minor variations
     last_prices = [0.0,0.0]
-    insert = "INSERT INTO price_history (cardname, setname, timestamp, price) values "
+    insert = "INSERT INTO {} (cardname, setname, timestamp, price) values ".format(tablename)
     for (timestamp, price) in history:
         price = round(float(price), 1)
         if (price > 0) and (price != last_prices[0]) and (price != last_prices[1]):
             values="('{0}', '{1}', '{2}', {3})".format(cardname.replace("'","''"), setname.replace("'","''"), timestamp, price)
-            mystic.execute(insert + values)
+            connection.execute(insert + values)
             last_prices = [price, last_prices[0]]
 
-def record_sets_price_history(connection, sets, cards_df):
+def record_sets_price_history(connection, tablename, sets, cards_df):
     '''
     Scrapes price data from MTGPrice.com for all cards in a given list of sets.
     Input:
@@ -208,7 +214,7 @@ def record_sets_price_history(connection, sets, cards_df):
                     print('\t\tCARD SCRAPE FAIL!\nfailed at #{0} card: {1}'.format(i+1, cardname)) 
             # Attempt to record history into database
             try:
-                record_price_history(connection, setname, cardname, history)
+                record_price_history(connection, tablename, setname, cardname, history)
                 print('\tSuccessfully recorded {0} ({1}) into database'.format(cardname, setname))
                 count += 1
             except:
@@ -237,32 +243,40 @@ def connect_mystic():
     connection = engine.connect()
     return connection
 
+def record_prices_by_rarity(connection, rarities, sets, cards_df):
+    '''
+    Rarities is a list of strings representing the card rarity of which to create the table
+    '''
+    for rarity in rarities:
+        cards_of_rarity_df = cards_df[cards_df['rarity']==rarity]
+        tablename = rarity+'_price_history'
+        record_sets_price_history(connection, tablename, sets, cards_of_rarity_df)
+
 if __name__ == "__main__":
-    # Connect to database, load card source, and select sets to scrape
-    mystic = connect_mystic()
-    cards_df = pd.read_csv('all_vintage_cards.csv')
+    # Connect to database, load card source
+    connection = connect_mystic()
+    all_cards_df = pd.read_csv('all_vintage_cards.csv')
+    
+    # Define target rarity, sets to scrape
+    rarities = ['mythic']
+    # sets = list(cards_df['set_name'].unique())
     sets = ['Rivals of Ixalan']
     
-    # cardname = "Angrath's Fury"
-    # history = card_price_history(sets[0], cardname)
-    # print('history: \n', history)
-    # record_price_history(mystic, sets[0], cardname, history)
-    
     # Record sets into database
-    record_sets_price_history(mystic, sets, cards_df)
+    record_prices_by_rarity(connection, rarities, sets, all_cards_df)
     
     # Show test results
-    results = mystic.execute("select * from price_history")
-    print('recorded price history:')
+    results = connection.execute("select * from mythic_price_history")
+    print('recorded mythic price history:')
     for r in results:
         print(r)
     
     # Delete test
-    mystic.execute("delete from price_history *")
-    results = mystic.execute("select * from price_history")
+    connection.execute("delete from mythic_price_history *")
+    results = connection.execute("select * from mythic_price_history")
     print('nothing here if deleted successfully:')
     for r in results:
         print(r)
     
     # Close connection
-    mystic.close()
+    connection.close()
