@@ -174,7 +174,7 @@ def record_price_history(connection, setname, cardname, history):
     for (timestamp, price) in history:
         price = round(float(price), 1)
         if (price > 0) and (price != last_prices[0]) and (price != last_prices[1]):
-            values="('{0}', '{1}', '{2}', {3})".format(cardname.replace("'","''"), setname, timestamp, price)
+            values="('{0}', '{1}', '{2}', {3})".format(cardname.replace("'","''"), setname.replace("'","''"), timestamp, price)
             mystic.execute(insert + values)
             last_prices = [price, last_prices[0]]
 
@@ -208,7 +208,7 @@ def record_sets_price_history(connection, sets, cards_df):
                     print('\t\tCARD SCRAPE FAIL!\nfailed at #{0} card: {1}'.format(i+1, cardname)) 
             # Attempt to record history into database
             try:
-                record_price_history(connection, cardname, setname, history)
+                record_price_history(connection, setname, cardname, history)
                 print('\tSuccessfully recorded {0} ({1}) into database'.format(cardname, setname))
                 count += 1
             except:
@@ -242,9 +242,14 @@ if __name__ == "__main__":
     mystic = connect_mystic()
     cards_df = pd.read_csv('all_vintage_cards.csv')
     sets = ['Rivals of Ixalan']
-
+    
+    # cardname = "Angrath's Fury"
+    # history = card_price_history(sets[0], cardname)
+    # print('history: \n', history)
+    # record_price_history(mystic, sets[0], cardname, history)
+    
     # Record sets into database
-    record_sets_price_history(mystic, sets, cards_df)
+    #record_sets_price_history(mystic, sets, cards_df)
     
     # Show test results
     results = mystic.execute("select * from price_history")
