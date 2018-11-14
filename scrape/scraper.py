@@ -265,6 +265,18 @@ def record_prices_by_rarity(connection, rarities, sets, cards_df):
         tablename = rarity+'_price_history'
         record_sets_price_history(connection, tablename, sets, cards_of_rarity_df)
 
+def clear_rarity_tables():
+    rarities = ['mythic', 'rare', 'uncommon', 'common']
+    connection = connect_mystic()
+    for rarity in rarities:
+        tablename = rarity+'_price_history'
+        del_string = "delete from {} *".format(tablename)
+        connection.execute(del_string)
+        results = connection.execute("select * from {}".format(tablename))
+        print('nothing here if {} deleted successfully:'.format(tablename))
+        for r in results:
+            print(r)
+
 if __name__ == "__main__":
     # Connect to database, load card source
     connection = connect_mystic()
