@@ -170,6 +170,11 @@ def pickle_all_sets():
 def record_price_history(connection, tablename, setname, cardname, history):
     '''
     Takes card price history and loads it into given database and table
+    Input:
+        connection: database connection object
+        tablename: name of the target SQL table in the database
+        setname, cardname: the data to be loaded into the corresponding table columns 
+        history: price data, np array with rows of [timestamp, price]
     '''
     # create table if it doesn't already exist
     connection.execute("CREATE TABLE IF NOT EXISTS {} (cardname text, setname text, timestamp text, price float)".format(tablename))
@@ -188,10 +193,10 @@ def record_sets_price_history(connection, tablename, sets, cards_df):
     '''
     Scrapes price data from MTGPrice.com for all cards in a given list of sets.
     Input:
-        sets is a list of sets to scrape, all_cards_df is a pandas dataframe of cards
-    Output:
-        set_dict is a dictionary with keys being magic set names from 'sets', and values
-        being dictionaries of (cards, price history) kv pairs for each card in the set.
+        connection: database connection object
+        tablename: name of the target SQL table in the database
+        sets: list of sets to search through and add to database, starting from most recent
+        cards_df: dataframe of cards, including columns for name and set_name
     '''
     for setname in sets:
         print('Scraping set from MTGPrice.com: {}'.format(setname))
@@ -226,6 +231,8 @@ def record_sets_price_history(connection, tablename, sets, cards_df):
 def connect_mystic():
     '''
     Connects to mystic-speculation database, returns connection object
+    Output:
+        SqlAlchemy PostgreSQL connection object to mystic speculation database
     '''
     # Define database info
     hostname = 'mystic-speculation.cwxojtlggspu.us-east-1.rds.amazonaws.com'
@@ -246,6 +253,11 @@ def connect_mystic():
 def record_prices_by_rarity(connection, rarities, sets, cards_df):
     '''
     Rarities is a list of strings representing the card rarity of which to create the table
+    Input:    
+        connection: sqlalchemy database connection object
+        rarities: card rarities to create database tables out of
+        sets: list of sets to search through and add to database, starting from most recent
+        cards_df: dataframe of cards, including columns for name and set_name
     '''
     for rarity in rarities:
         cards_of_rarity_df = cards_df[cards_df['rarity']==rarity]
@@ -258,13 +270,13 @@ if __name__ == "__main__":
     all_cards_df = pd.read_csv('all_vintage_cards.csv')
     
     # Define target rarity, sets to scrape
-    rarities = ['mythic']
-    # sets = list(cards_df['set_name'].unique())
-    sets = ['Rivals of Ixalan']
+    rarities = ['mythic', 'rare', 'uncommon', 'common']
+    sets = list(all_cards_df['set_name'].unique())
     
     # Record sets into database
     record_prices_by_rarity(connection, rarities, sets, all_cards_df)
     
+    '''
     # Show test results
     results = connection.execute("select * from mythic_price_history")
     print('recorded mythic price history:')
@@ -277,6 +289,6 @@ if __name__ == "__main__":
     print('nothing here if deleted successfully:')
     for r in results:
         print(r)
-    
+    '''
     # Close connection
     connection.close()
