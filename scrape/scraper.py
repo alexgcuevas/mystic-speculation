@@ -150,7 +150,7 @@ def sets_price_history(sets, all_cards_df):
                 history = card_price_history(setname, cardname)
                 card_dict[cardname] = history
                 print('successfully scraped {0} from {1}'.format(cardname, setname))
-                time.sleep()
+                # time.sleep()
             except:
                 if i == 1:
                     print('SET SCRAPE FAIL!\nfailed set: {}'.format(setname))
@@ -160,12 +160,6 @@ def sets_price_history(sets, all_cards_df):
         set_dict[setname] = card_dict
     return set_dict
 
-def load_to_postgres(cardname, setname, price_dict):
-    price_df = pd.DataFrame(price_dict)
-    engine = create_engine('postgresql://mystic-speculation.cwxojtlggspu.us-east-1.rds.amazonaws.com:password?@localhost:5432/alexgcuevas')
-    price_df.to_sql('sets', engine)
-    pass
-
 def pickle_all_sets():
     all_cards_df = pd.read_csv('all_vintage_cards.csv')
     sets = list(all_cards_df['set_name'].unique())
@@ -173,23 +167,55 @@ def pickle_all_sets():
     with open("all_vintage_price_scrape.p", 'wb') as output_file:
         pickle.dump(set_dict, output_file)
 
-def record_price_history(connection, cardname, setname, history):
-    # Create table if doesn't exit
-    connection.execute("CREATE TABLE IF NOT EXISTS price_history (cardname text, setname text, timestamp text, price float)")
-
+def record_price_history(connection, setname, cardname, history):
     # populate card history, ignoring repeat prices and minor variations
     last_prices = [0.0,0.0]
+    insert = "INSERT INTO price_history (cardname, setname, timestamp, price) values "
     for (timestamp, price) in history:
         price = round(float(price), 1)
-        if price != last_prices[0] and price != last_prices[1]:
-            mystic.execute("INSERT INTO price_history (cardname, setname, timestamp, price) values ('{0}', '{1}', '{2}', {3})".format(cardname,
-                                                                                                                                setname,
-                                                                                                                                timestamp,
-                                                                                                                                price))
+        if (price > 0) and (price != last_prices[0]) and (price != last_prices[1]):
+            values="('{0}', '{1}', '{2}', {3})".format(cardname.replace("'","''"), setname, timestamp, price)
+            mystic.execute(insert + values)
             last_prices = [price, last_prices[0]]
 
-def record_price_histories(connection, card_dict):
-    pass
+def record_sets_price_history(connection, sets, cards_df):
+    '''
+    Scrapes price data from MTGPrice.com for all cards in a given list of sets.
+    Input:
+        sets is a list of sets to scrape, all_cards_df is a pandas dataframe of cards
+    Output:
+        set_dict is a dictionary with keys being magic set names from 'sets', and values
+        being dictionaries of (cards, price history) kv pairs for each card in the set.
+    '''
+    for setname in sets:
+        print('Scraping set from MTGPrice.com: {}'.format(setname))
+        cards = cards_df[cards_df['set_name'] == setname]['name'].values
+        total = cards.shape[0]
+        count = 0
+        for i, cardname in enumerate(cards):
+            if '/' in cardname:
+                cardname = cardname.split('/')[0]
+            print('\tScraping card {0} from MTGPrice.com: {1}'.format(i, cardname))
+            # Attempt to scrape card
+            try:
+                history = card_price_history(setname, cardname)
+                print('\tSuccessfully scraped {0} from {1}'.format(cardname, setname))
+            except:
+                if i == 0:
+                    print('\t\tSET SCRAPE FAIL!\nfailed set: {}'.format(setname))
+                    break
+                else:
+                    print('\t\tCARD SCRAPE FAIL!\nfailed at #{0} card: {1}'.format(i+1, cardname)) 
+            # Attempt to record history into database
+            try:
+                record_price_history(connection, cardname, setname, history)
+                print('\tSuccessfully recorded {0} ({1}) into database'.format(cardname, setname))
+                count += 1
+            except:
+                print('\tFailed to record {0} ({1}) into database'.format(cardname, setname))
+                           
+        print('Finished attempt at scraping set: {}'.format(setname))
+        print('Total cards in set: {0}\nTotal cards recorded: {1}'.format(total, count))
 
 def connect_mystic():
     '''
@@ -212,21 +238,26 @@ def connect_mystic():
     return connection
 
 if __name__ == "__main__":
+    # Connect to database, load card source, and select sets to scrape
     mystic = connect_mystic()
+    cards_df = pd.read_csv('all_vintage_cards.csv')
+    sets = ['Rivals of Ixalan']
 
-    # test recording function
-    cardname = 'Arcanis the Omnipotent'
-    setname = 'Onslaught'
-    history = card_price_history(setname, cardname)
-    record_price_history(mystic, cardname, setname, history)
+    # Record sets into database
+    record_sets_price_history(mystic, sets, cards_df)
+    
+    # Show test results
     results = mystic.execute("select * from price_history")
+    print('recorded price history:')
     for r in results:
         print(r)
-    # delete test
+    
+    # Delete test
     mystic.execute("delete from price_history *")
     results = mystic.execute("select * from price_history")
     print('nothing here if deleted successfully:')
     for r in results:
         print(r)
     
+    # Close connection
     mystic.close()
