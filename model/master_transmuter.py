@@ -1,28 +1,167 @@
 import numpy as np
 import pandas as pd
+import matplotlib.pyplot as plt
+from sklearn.pipeline import Pipeline
+from sklearn.base import BaseEstimator, TransformerMixin
+
+# NLP Pipeline
+from bs4 import BeautifulSoup
+from nltk.stem.wordnet import WordNetLemmatizer
+from sklearn.feature_extraction.text import TfidfVectorizer
+
+# Silence outdated numpy warning
+import warnings
+
+warnings.filterwarnings(action="ignore", category=DeprecationWarning)
+
 
 '''
 Features to engineer:
-
-pure feature transforms:
-    p/t ratio
-    t/p ratio
-    p+t : cmc ratio
-
-nlp / text analysis:
-    keywordification
-    n-grams (the big boi)
-        n-grams by card type?
-    # abilities (count ':'s?)
-    cmc of abilities
-    synergies (tf-df?)
-    mana abilities
-    difficulty to cast (mana, 'additional cost')
-    card similarity
-    activated vs triggered abilities 
-
-independent / dependent transforms:
-    card-card similarity, nearest neighbors
-    price normalization by season
-    price decomposition by format
+    pure feature transforms:
+        p/t ratio
+        t/p ratio
+        p+t : cmc ratio
+    nlp / text analysis:
+        keywordification
+        n-grams (the big boi)
+            n-grams by card type?
+        # abilities (count ':'s?)
+        cmc of abilities
+        synergies (tf-df?)
+        mana abilities
+        difficulty to cast (mana, 'additional cost')
+        card similarity
+        activated vs triggered abilities 
+    independent / dependent transforms:
+        card-card similarity, nearest neighbors
+        price normalization by season
+        price decomposition by format
 '''
+def one_hot(input_df, columns):
+    """
+    One-hot encode the provided list of columns and return a new copy of the data frame
+    """
+    df = input_df.copy()
+
+    for col in columns:
+        dummies = pd.get_dummies(df[col], prefix=col)
+        dummies.drop(dummies.columns[-1], axis=1, inplace=True)
+        df = df.drop(col, axis=1).merge(dummies, left_index=True, right_index=True)
+
+    return df
+
+
+class OneHotTransformer(BaseEstimator, TransformerMixin):
+    """
+    One-hot encode features
+    """
+
+    def fit(self, X, y=None):
+        """
+        Store the features resulting from training features
+        Accepts DataFrame
+        Saves state and returns self
+        """
+        df = one_hot(
+            X,
+            [
+                # PUT FEATURES TO ONE-HOT HERE
+            ],
+        )
+        self.train_columns = df.columns
+
+        return self
+
+    def transform(self, X):
+        """
+        One-hot encode and ensure all features captured in training are present as well.
+        Accepts DataFrame
+        Returns DataFrame with addition features
+        """
+        df = X.copy()
+        df = one_hot(
+            df,
+            [
+                # PUT FEATURES TO ONE-HOT HERE
+            ],
+        )
+
+        # Remove untrained columns
+        for col in self.train_columns:
+            if col not in df.columns:
+                df[col] = 0
+
+        # Add trained on columns
+        for col in df.columns:
+            if col not in self.train_columns:
+                df.drop(col, axis=1, inplace=True)
+
+        return df[self.train_columns]
+
+class FillTransformer(BaseEstimator, TransformerMixin):
+    """
+    Impute NaN values
+    # TODO: Parameterize so values can be imputed with -1, mean, median, or mode.
+    """
+
+    def fit(self, X, y=None):
+        self.fill_value = -1 # >>> DO I WANT THIS? 
+        return self
+
+    def transform(self, X):
+        # paramaterize this with mean, median, mode, etc.
+        # fill with -1
+        # TODO: make this fill dynamic for all columns?
+        df = X.copy()
+        df.fillna(self.fill_value, axis=1, inplace=True)
+        return df
+
+class DeriveFeaturesTransformer(BaseEstimator, TransformerMixin):
+    """Add engineered features to DataFrame."""
+
+    def fit(self, X, y=None):
+        """Does not save state"""
+
+        return self
+
+    def transform(self, X):
+        """Derives additional features used in the training of models."""
+
+        df = derive_features(X)
+        return df
+
+def derive_features(X):
+    df = X.copy()
+
+    # Creature Features
+    df['p:t'] = df['power']/df['toughness']
+    df['p+t'] = df['power']+df['toughness']
+    df['p*t'] = df['power']*df['toughness']
+    df['cmc:p+t'] = df['cmc']/df['p+t']
+    df['cmc:p*t'] = df['cmc']/df['p*t']
+
+    # Difficulty casting
+    df['mana intensity'] = df['mana_cost']).apply(lambda x: len(x))
+    df['color intensity'] = df['color_identities']).apply(lambda x: len(x))
+    
+
+class SelectFeaturesTransformer(BaseEstimator, TransformerMixin):
+    """Select features."""
+
+    # TODO: add parameterization of features for code reuse (or find a generic transformer)
+    def __init__(self):
+        self.features_to_drop = [
+            # FILL WITH FEATURES TO DROP; SEE SCRAPER?
+        ]
+
+    def fit(self, X, y=None):
+        """Does not save state."""
+
+        return self
+
+    def transform(self, X):
+        """'Return DataFrame containing only the configured features."""
+
+        df = X.drop(self.features_to_drop, axis=1)
+
+        return df
