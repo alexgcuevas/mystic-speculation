@@ -1,5 +1,6 @@
 import numpy as np
 import pandas as pd
+import math
 import matplotlib.pyplot as plt
 from sklearn.pipeline import Pipeline
 from sklearn.base import BaseEstimator, TransformerMixin
@@ -130,21 +131,58 @@ class DeriveFeaturesTransformer(BaseEstimator, TransformerMixin):
         df = derive_features(X)
         return df
 
+class CreatureFeatureTransformer(BaseEstimator, TransformerMixin):
+    """Add engineered creature features to DataFrame."""
+
+    def fit(self, X, y=None):
+        """Does not save state"""
+
+        return self
+
+    def transform(self, X):
+        """Derives additional features used in the training of models."""
+        df = X.copy()
+
+        # Creature Features
+        def pt_type(row):
+            if (type(row['power']) == type('str')) and (type(row['toughness']) == type('str')):
+                if '*' in row['power']+row['toughness']:
+                    return 'variable'
+                return 'static'
+            return 'none'
+        def power_to_int(row):
+            if row['pt_type']=='static': 
+                return int(row['power'])
+            else:
+                return row['power']
+        def tough_to_int(row):
+            if row['pt_type']=='static':
+                return int(row['toughness'])
+            else:
+                return row['toughness']
+
+        # Create pt_type feature, convert static pts to ints
+        df['pt_type'] = df.apply(pt_type, axis=1)
+        df['power'] = df.apply(power_to_int, axis=1)
+        df['toughness'] = df.apply(tough_to_int, axis=1)
+
+        # Only engineer creatures with static PT
+        mask = df['pt_type']=='static'
+
+        # ACTUAL ENGINEERING
+        df['p:t'] = df[mask]['power']/df[mask]['toughness']
+        df['p+t'] = df[mask]['power']+df[mask]['toughness']
+        df['p*t'] = df[mask]['power']*df[mask]['toughness']
+        df['sqrt_pt'] = math.sqrt(df[mask]['p*t'])
+        df['avg_pt'] = (df[mask]['p+t'])/2
+        df['cmc:p+t'] = df[mask]['cmc']/df[mask]['p+t']
+        df['cmc:p*t'] = df[mask]['cmc']/df[mask]['sqrt_pt']
+
+        return df
+
 def derive_features(X):
     df = X.copy()
-
-    # Creature Features
-    null_mask = pd.isnull(df['power']) & pd.isnull(df['toughness'])
-    tough_mask = df['toughness'].apply(lambda x: '*' in str(x))
-    power_mask = df['power'].apply(lambda x: '*' in str(x))
-    df['variable_pt'] = df[tough_mask | power_mask]
-
-    df['p:t'] = df['power']/df['toughness']
-    df['p+t'] = df['power']+df['toughness']
-    df['p*t'] = df['power']*df['toughness']
-    df['cmc:p+t'] = df['cmc']/df['p+t']
-    df['cmc:p*t'] = df['cmc']/df['p*t']
-
+ 
     # Difficulty casting
     df['mana intensity'] = df['mana_cost'].apply(lambda x: len(x))
     df['color intensity'] = df['color_identities'].apply(lambda x: len(x))
