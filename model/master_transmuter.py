@@ -134,6 +134,11 @@ def derive_features(X):
     df = X.copy()
 
     # Creature Features
+
+    tough_mask = df['toughness'].apply(lambda x: '*' in str(x))
+    power_mask = df['power'].apply(lambda x: '*' in str(x))
+    df[['name', 'power', 'toughness']][tough_mask | power_mask]
+
     df['p:t'] = df['power']/df['toughness']
     df['p+t'] = df['power']+df['toughness']
     df['p*t'] = df['power']*df['toughness']
@@ -141,8 +146,8 @@ def derive_features(X):
     df['cmc:p*t'] = df['cmc']/df['p*t']
 
     # Difficulty casting
-    df['mana intensity'] = df['mana_cost']).apply(lambda x: len(x))
-    df['color intensity'] = df['color_identities']).apply(lambda x: len(x))
+    df['mana intensity'] = df['mana_cost'].apply(lambda x: len(x))
+    df['color intensity'] = df['color_identities'].apply(lambda x: len(x))
     
 
 class SelectFeaturesTransformer(BaseEstimator, TransformerMixin):
