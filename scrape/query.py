@@ -37,3 +37,8 @@ def write_recent_prices(cards_df, rarities):
     for rarity in rarities:
         filled_df = fill_recent_prices(cards_df[cards_df['rarity']==rarity])
         filled_df.to_csv(path_or_buf='all_vintage_cards-{}_recent.csv'.format(rarity))
+
+if __name__ == "__main__":
+    cards_df = pd.read_csv('scrape/all_vintage_cards.csv')
+    rarities = ['rare']
+    write_recent_prices(cards_df, rarities)
