@@ -101,7 +101,7 @@ def load_card_features(n=1320):
     print(' ~~~ cleaning everything now ~~~ ')
     MVP_data = MVP_features(cards)
     print(' ~~~ writing to csv ~~~ ')
-    MVP_data.to_csv(path_or_buf='scrape/all_vintage_cards.csv')
+    MVP_data.to_csv(path_or_buf='data/all_vintage_cards.csv')
 
 def card_price_history(setname, cardname):
     '''
@@ -162,10 +162,10 @@ def sets_price_history(sets, all_cards_df):
     return set_dict
 
 def pickle_all_sets():
-    all_cards_df = pd.read_csv('scrape/all_vintage_cards.csv')
+    all_cards_df = pd.read_csv('data/all_vintage_cards.csv')
     sets = list(all_cards_df['set_name'].unique())
     set_dict = sets_price_history(sets, all_cards_df)
-    with open("scrape/all_vintage_price_scrape.p", 'wb') as output_file:
+    with open("data/all_vintage_price_scrape.p", 'wb') as output_file:
         pickle.dump(set_dict, output_file)
 
 def record_price_history(connection, tablename, setname, cardname, history):
@@ -277,7 +277,7 @@ def record_prices_by_rarity(connection, rarities, version, sets, cards_df):
         # Temp name to not overwrite previous scraping attempts
         tablename = rarity+'_price_history_'+version
         fail_dict = record_sets_price_history(connection, tablename, sets, cards_of_rarity_df)
-        with open("scrape/{}_fails.p".format(rarity), 'wb') as output_file:
+        with open("data/{}_fails.p".format(rarity), 'wb') as output_file:
             pickle.dump(fail_dict, output_file)
 
 def clear_rarity_tables(version=''):
@@ -295,7 +295,7 @@ def clear_rarity_tables(version=''):
 def record_prices_by_rarity_version(version):
     # Connect to database, load card source
     connection = connect_mystic()
-    all_cards_df = pd.read_csv('scrape/all_vintage_cards.csv')
+    all_cards_df = pd.read_csv('data/all_vintage_cards.csv')
     
     # Define target rarities, sets to scrape
     rarities = ['mythic', 'rare', 'uncommon', 'common']
