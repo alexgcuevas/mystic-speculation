@@ -26,6 +26,6 @@ def get_recent_price(card_row):
     # Do the thing
     results = connection.execute(query)
     for r in results:
-        print(r)
-    return (r[2], r[3])
+        return (r[2], r[3])
+    
 
