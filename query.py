@@ -26,6 +26,8 @@ def get_recent_price(card_row, version=2):
     results = connection.execute(query)
     connection.close()
     for r in results:
+        print("loading {0}'s price {1} at time {2} into dataframe:".format(cardname, ))
+        print(r)
         return (r[2], r[3])
 
 def fill_recent_prices(cards_df):

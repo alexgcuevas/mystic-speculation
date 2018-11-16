@@ -307,5 +307,5 @@ def record_prices_by_rarity_version(version):
     # Close connection
     connection.close()
 
-if __name__ == "__main__":
-    pass
+#if __name__ == "__main__":
+ #   pass
