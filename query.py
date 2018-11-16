@@ -12,7 +12,7 @@ def get_recent_price(card_row, version=2):
     rarity = card_row['rarity']
 
     # Structure query (with language)
-    tablename = rarity+"_price_history_"+version
+    tablename = rarity+"_price_history_"+str(version)
     connection = connect_mystic()
 
     query = ("select ph.cardname, ph.setname, ph.timestamp, ph.price "
