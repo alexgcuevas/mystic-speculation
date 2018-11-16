@@ -28,4 +28,12 @@ def get_recent_price(card_row):
     for r in results:
         return (r[2], r[3])
     
+def fill_recent_prices(cards_df):
+    filled_df = cards_df.copy()
+    filled_df[['recent_date','recent_price']] = cards_df.apply(get_recent_price, axis=1).apply(pd.Series)
+    return filled_df
 
+def write_recent_prices(cards_df, rarities):
+    for rarity in rarities:
+        filled_df = fill_recent_prices(cards_df[cards_df['rarity']==rarity])
+        filled_df.to_csv(path_or_buf='all_vintage_cards-{}_recent.csv'.format(rarity))

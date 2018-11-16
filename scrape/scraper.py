@@ -101,7 +101,7 @@ def load_card_features(n=1320):
     print(' ~~~ cleaning everything now ~~~ ')
     MVP_data = MVP_features(cards)
     print(' ~~~ writing to csv ~~~ ')
-    MVP_data.to_csv(path_or_buf='all_vintage_cards.csv')
+    MVP_data.to_csv(path_or_buf='scrape/all_vintage_cards.csv')
 
 def card_price_history(setname, cardname):
     '''
@@ -162,10 +162,10 @@ def sets_price_history(sets, all_cards_df):
     return set_dict
 
 def pickle_all_sets():
-    all_cards_df = pd.read_csv('all_vintage_cards.csv')
+    all_cards_df = pd.read_csv('scrape/all_vintage_cards.csv')
     sets = list(all_cards_df['set_name'].unique())
     set_dict = sets_price_history(sets, all_cards_df)
-    with open("all_vintage_price_scrape.p", 'wb') as output_file:
+    with open("scrape/all_vintage_price_scrape.p", 'wb') as output_file:
         pickle.dump(set_dict, output_file)
 
 def record_price_history(connection, tablename, setname, cardname, history):
@@ -263,7 +263,7 @@ def connect_mystic():
     connection = engine.connect()
     return connection
 
-def record_prices_by_rarity(connection, rarities, sets, cards_df):
+def record_prices_by_rarity(connection, rarities, version, sets, cards_df):
     '''
     Rarities is a list of strings representing the card rarity of which to create the table
     Input:    
@@ -275,16 +275,16 @@ def record_prices_by_rarity(connection, rarities, sets, cards_df):
     for rarity in rarities:
         cards_of_rarity_df = cards_df[cards_df['rarity']==rarity]
         # Temp name to not overwrite previous scraping attempts
-        tablename = rarity+'_price_history_2'
+        tablename = rarity+'_price_history_'+version
         fail_dict = record_sets_price_history(connection, tablename, sets, cards_of_rarity_df)
-        with open("{}_fails.p".format(rarity), 'wb') as output_file:
+        with open("scrape/{}_fails.p".format(rarity), 'wb') as output_file:
             pickle.dump(fail_dict, output_file)
 
-def clear_rarity_tables():
+def clear_rarity_tables(version=''):
     rarities = ['mythic', 'rare', 'uncommon', 'common']
     connection = connect_mystic()
     for rarity in rarities:
-        tablename = rarity+'_price_history'
+        tablename = rarity+'_price_history'+version
         del_string = "delete from {} *".format(tablename)
         connection.execute(del_string)
         results = connection.execute("select * from {}".format(tablename))
@@ -292,32 +292,20 @@ def clear_rarity_tables():
         for r in results:
             print(r)
 
-if __name__ == "__main__":
+def record_prices_by_rarity_version(version):
     # Connect to database, load card source
     connection = connect_mystic()
-    all_cards_df = pd.read_csv('all_vintage_cards.csv')
+    all_cards_df = pd.read_csv('scrape/all_vintage_cards.csv')
     
-    # Define target rarity, sets to scrape
-
+    # Define target rarities, sets to scrape
     rarities = ['mythic', 'rare', 'uncommon', 'common']
     sets = list(all_cards_df['set_name'].unique())
     
     # Record sets into database
-    record_prices_by_rarity(connection, rarities, sets, all_cards_df)
+    record_prices_by_rarity(connection, rarities, version, sets, all_cards_df)
     
-    '''
-    # Show test results
-    results = connection.execute("select * from mythic_price_history")
-    print('recorded mythic price history:')
-    for r in results:
-        print(r)
-    
-    # Delete test
-    connection.execute("delete from mythic_price_history *")
-    results = connection.execute("select * from mythic_price_history")
-    print('nothing here if deleted successfully:')
-    for r in results:
-        print(r)
-    '''
     # Close connection
     connection.close()
+
+if __name__ == "__main__":
+    pass

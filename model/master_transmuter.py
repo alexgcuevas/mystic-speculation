@@ -186,7 +186,6 @@ def derive_features(X):
     # Difficulty casting
     df['mana intensity'] = df['mana_cost'].apply(lambda x: len(x))
     df['color intensity'] = df['color_identities'].apply(lambda x: len(x))
-    
 
 class SelectFeaturesTransformer(BaseEstimator, TransformerMixin):
     """Select features."""
