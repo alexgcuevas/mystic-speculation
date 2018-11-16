@@ -253,7 +253,7 @@ def connect_mystic():
     dbname = 'mystic_speculation'
 
     # load username and pw information for database
-    with open('login.txt', 'r') as login_info:
+    with open('scrape/login.txt', 'r') as login_info:
         username = login_info.readline().strip()
         password = login_info.readline().strip()
 

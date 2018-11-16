@@ -25,7 +25,8 @@ def test_feature_engineering(cards_df):
 
     creature_feature = CreatureFeatureTransformer()
     new_feats_df = creature_feature.transform(tests)
-    print(new_feats_df.head())
+    new_feats = ['name']+list(set(new_feats_df.columns) - set(cards_df.columns))
+    print(new_feats_df[new_feats])
 
 
 
