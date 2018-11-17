@@ -19,7 +19,8 @@ def get_recent_price(card_row, version=2):
              "     (select max(timestamp) as lastdate "
              "      from {0} ph2 "
              "      where ph2.cardname='{1}' and ph2.setname='{2}') mostrecent "
-             "where ph.timestamp = mostrecent.lastdate ").format(tablename, cardname, setname)
+             "where ph.timestamp = mostrecent.lastdate "
+             "and ph.cardname='{1}' and ph.setname='{2}' ").format(tablename, cardname, setname)
 
     # Do the thing
     results = connection.execute(query)
