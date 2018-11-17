@@ -171,12 +171,11 @@ class CreatureFeatureTransformer(BaseEstimator, TransformerMixin):
 
         # ACTUAL ENGINEERING
         df['p:t'] = df[mask]['power']/df[mask]['toughness']
-        df['p+t'] = df[mask]['power']+df[mask]['toughness']
-        df['p*t'] = df[mask]['power']*df[mask]['toughness']
-        df['sqrt_pt'] = df[mask]['p*t'].apply(math.sqrt)
-        df['avg_pt'] = (df[mask]['p+t'])/2
-        df['cmc:p+t'] = df[mask]['cmc']/df[mask]['p+t']
-        df['cmc:p*t'] = df[mask]['cmc']/df[mask]['sqrt_pt']
+        # df['p*t'] = (df[mask]['power']+1)*(df[mask]['toughness']+1)
+        # df['sqrt_pt'] = df[mask]['p*t'].apply(math.sqrt)-1
+        df['avg_pt'] = (df[mask]['power']+df[mask]['toughness'])/2
+        # df['cmc:p*t'] = df[mask]['cmc']/df[mask]['p*t']
+        df['cmc:apt'] = df[mask]['cmc']/df[mask]['avg_pt']
 
         return df
 
