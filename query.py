@@ -64,5 +64,5 @@ def connect_mystic():
 
 if __name__ == "__main__":
     cards_df = pd.read_csv('data/all_vintage_cards.csv')
-    rarities = ['rare']
+    rarities = ['mythic', 'rare']
     write_recent_prices(cards_df, rarities)
