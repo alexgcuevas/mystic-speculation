@@ -146,7 +146,7 @@ class CreatureFeatureTransformer(BaseEstimator, TransformerMixin):
         # Creature Features
         def pt_type(row):
             if (type(row['power']) == type('str')) and (type(row['toughness']) == type('str')):
-                if '*' in row['power']+row['toughness']:
+                if '*' in row['power']+row['toughness'] or row['toughness']=='0':
                     return 'variable'
                 return 'static'
             return 'none'
@@ -173,7 +173,7 @@ class CreatureFeatureTransformer(BaseEstimator, TransformerMixin):
         df['p:t'] = df[mask]['power']/df[mask]['toughness']
         df['p+t'] = df[mask]['power']+df[mask]['toughness']
         df['p*t'] = df[mask]['power']*df[mask]['toughness']
-        df['sqrt_pt'] = math.sqrt(df[mask]['p*t'])
+        df['sqrt_pt'] = df[mask]['p*t'].apply(math.sqrt)
         df['avg_pt'] = (df[mask]['p+t'])/2
         df['cmc:p+t'] = df[mask]['cmc']/df[mask]['p+t']
         df['cmc:p*t'] = df[mask]['cmc']/df[mask]['sqrt_pt']
