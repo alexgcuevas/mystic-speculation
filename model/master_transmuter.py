@@ -325,6 +325,4 @@ def price_corrector(y_pred):
     y_pred[y_pred < 0.10] = 0.10
     return np.round(y_pred,1)
 
-def log_score(y_pred,y_test):
-    log_diff = np.log(y_pred+1) - np.log(y_test+1)
-    return np.sqrt(np.mean(log_diff**2))
+
