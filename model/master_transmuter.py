@@ -51,7 +51,6 @@ def one_hot(input_df, columns):
 
     return df
 
-
 class OneHotTransformer(BaseEstimator, TransformerMixin):
     """
     One-hot encode features
@@ -122,13 +121,15 @@ class DeriveFeaturesTransformer(BaseEstimator, TransformerMixin):
 
     def fit(self, X, y=None):
         """Does not save state"""
-
         return self
 
     def transform(self, X):
         """Derives additional features used in the training of models."""
+        df = X.copy()
 
-        df = derive_features(X)
+        # Difficulty casting
+        df['mana intensity'] = df['mana_cost'].apply(lambda x: len(x))
+        df['color intensity'] = df['color_identities'].apply(lambda x: len(x))
         return df
 
 class CreatureFeatureTransformer(BaseEstimator, TransformerMixin):
@@ -202,32 +203,32 @@ class PlaneswalkerTransformer(BaseEstimator, TransformerMixin):
         
         return df
 
-def derive_features(X):
-    df = X.copy()
- 
-    # Difficulty casting
-    df['mana intensity'] = df['mana_cost'].apply(lambda x: len(x))
-    df['color intensity'] = df['color_identities'].apply(lambda x: len(x))
-
 class SelectFeaturesTransformer(BaseEstimator, TransformerMixin):
     """Select features."""
 
     # TODO: add parameterization of features for code reuse (or find a generic transformer)
     def __init__(self):
         self.features_to_drop = [
-            # FILL WITH FEATURES TO DROP; SEE SCRAPER?
+            'cardname'
+            ,'setname'
+            ,'type_line'
+            ,'mana_cost'
+            ,'oracle_text'
+            ,'set'
+            ,'colors'
+            ,'color_identity'
+            ,'legalities'
+            ,'timestamp'
+            # ,'price'
         ]
 
     def fit(self, X, y=None):
         """Does not save state."""
-
         return self
 
     def transform(self, X):
         """'Return DataFrame containing only the configured features."""
-
         df = X.drop(self.features_to_drop, axis=1)
-
         return df
 
 class ReadCSVTransformer(BaseEstimator, TransformerMixin):
@@ -248,7 +249,7 @@ class ReadCSVTransformer(BaseEstimator, TransformerMixin):
 class SetExclusionTransformer(BaseEstimator, TransformerMixin):
     """Removes sets"""
     def __init__(self):
-        self.Sets_to_drop = [
+        self.sets_to_drop = [
             'Kaladesh Inventions',
             'Zendikar Expeditions'
         ]
@@ -259,7 +260,33 @@ class SetExclusionTransformer(BaseEstimator, TransformerMixin):
     def transform(self, X):
         """Drops unnamed column & duplicates, and sets id as index"""
         df = X.copy()
-        df.drop(columns='Unnamed: 0', inplace=True)
-        df.drop_duplicates(inplace=True)
-        df.set_index('id', inplace=True)
+        df = df[df['setname'].apply(lambda x: x not in self.sets_to_drop)]
+        return df
+
+class BoolTransformer(BaseEstimator, TransformerMixin):
+    """Changes all Falses to 0 and Trues to 1"""
+    def fit(self, X, y=None):
+        """Does not save state."""
+        return self
+
+    def transform(self, X):
+        """Drops unnamed column & duplicates, and sets id as index"""
+        df = X.copy()
+        df['reprint'] = 1*df['reprint']
+        return df
+
+class CreateDummiesTransformer(BaseEstimator, TransformerMixin):
+    """Creates Dummies for given features"""
+    def __init__(self):
+        self.dummy_features = ['rarity','layout','pt_type','l_type']
+        self.prefix = 'mvp'
+
+    def fit(self, X, y=None):
+        """Does not save state."""
+        return self
+
+    def transform(self, X):
+        """Drops unnamed column & duplicates, and sets id as index"""
+        df = X.copy()
+        df = pd.get_dummies(df, columns=self.dummy_features, prefix=self.dummy_features)
         return df
