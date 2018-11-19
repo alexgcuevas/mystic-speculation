@@ -127,9 +127,18 @@ class DeriveFeaturesTransformer(BaseEstimator, TransformerMixin):
         """Derives additional features used in the training of models."""
         df = X.copy()
 
+        def colors(row):
+            try:
+                intensity = len(row['mana_cost'])
+                if (intensity == 3) & (row['mana_cost'][1] not in ['W', 'U', 'B', 'R', 'G']):
+                    return 0
+                else: 
+                    return intensity
+            except:
+                return 0
         # Difficulty casting
-        df['mana intensity'] = df['mana_cost'].apply(lambda x: len(x))
-        df['color intensity'] = df['color_identities'].apply(lambda x: len(x))
+        df['mana intensity'] = df['mana_cost'].apply(lambda x: colors(x))-2
+        df['color intensity'] = df['color_identity'].apply(lambda x: len(x)-2)
         return df
 
 class CreatureFeatureTransformer(BaseEstimator, TransformerMixin):
@@ -203,7 +212,7 @@ class PlaneswalkerTransformer(BaseEstimator, TransformerMixin):
         
         return df
 
-class SelectFeaturesTransformer(BaseEstimator, TransformerMixin):
+class DropFeaturesTransformer(BaseEstimator, TransformerMixin):
     """Select features."""
 
     # TODO: add parameterization of features for code reuse (or find a generic transformer)
@@ -231,37 +240,38 @@ class SelectFeaturesTransformer(BaseEstimator, TransformerMixin):
         df = X.drop(self.features_to_drop, axis=1)
         return df
 
-class ReadCSVTransformer(BaseEstimator, TransformerMixin):
-    """Clean up after reading CSV"""
+def csv_cleaner(df, y_col='price'):
+    clean_df = df.copy()
+    clean_df.drop(columns='Unnamed: 0', inplace=True)
+    clean_df.drop_duplicates(inplace=True)
+    clean_df.set_index('id', inplace=True)
 
-    def fit(self, X, y=None):
-        """Does not save state."""
-        return self
-
-    def transform(self, X):
-        """Drops unnamed column & duplicates, and sets id as index"""
-        df = X.copy()
-        df.drop(columns='Unnamed: 0', inplace=True)
-        df.drop_duplicates(inplace=True)
-        df.set_index('id', inplace=True)
-        return df
+    set_excluder = SetExclusionTransformer()
+    clean_df = set_excluder.transform(clean_df)
+    return clean_df.drop(columns=y_col, axis=1), clean_df[y_col]
 
 class SetExclusionTransformer(BaseEstimator, TransformerMixin):
     """Removes sets"""
     def __init__(self):
         self.sets_to_drop = [
             'Kaladesh Inventions',
-            'Zendikar Expeditions'
+            'Zendikar Expeditions',
+            'Portal Three Kingdoms',
+            'Legends',
+            'Arabian Nights',
+            'Modern Masters',
+            'Eternal Masters',
+            'Modern Masters 2017',
+            'Modern Masters 2015',
+            'Iconic Masters'
         ]
     def fit(self, X, y=None):
-        """Does not save state."""
         return self
 
     def transform(self, X):
         """Drops unnamed column & duplicates, and sets id as index"""
         df = X.copy()
-        df = df[df['setname'].apply(lambda x: x not in self.sets_to_drop)]
-        return df
+        return df[df['setname'].apply(lambda x: x not in self.sets_to_drop)]
 
 class BoolTransformer(BaseEstimator, TransformerMixin):
     """Changes all Falses to 0 and Trues to 1"""
@@ -290,3 +300,27 @@ class CreateDummiesTransformer(BaseEstimator, TransformerMixin):
         df = X.copy()
         df = pd.get_dummies(df, columns=self.dummy_features, prefix=self.dummy_features)
         return df
+
+class TestFillTransformer(BaseEstimator, TransformerMixin):
+    """Fills unmatched columns in X_test with -1"""
+    def __init__(self):
+        self.fill_value = -1
+
+    def fit(self, X, y=None):
+        """Does not save state."""
+        self.train_columns = set(X.columns)
+        return self
+
+    def transform(self, X):
+        """Enlarges test columns to equal train size"""
+        df = X.copy()
+        # Fill columns in train but not test with fill value
+        leftover = self.train_columns - set(X.columns)
+        for column in leftover:
+            df[column] = -1
+        return df
+
+def price_corrector(y_pred):
+    y_pred = np.array(y_pred) 
+    y_pred[y_pred < 0.10] = 0.10
+    return np.round(y_pred,1)
