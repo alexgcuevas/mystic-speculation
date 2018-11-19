@@ -28,5 +28,28 @@ def test_feature_engineering(cards_df):
     new_feats = ['name']+list(set(new_feats_df.columns) - set(cards_df.columns))
     print(new_feats_df[new_feats])
 
+def query_rarity_dfs(rarity='mythic', version=2, rows=10):
+    tablename = rarity+'_price_history_'+str(version)
+    connection = connect_mystic()
+
+    query = ("select ph.cardname, ph.setname, ph.timestamp, ph.price "
+            "from {0} ph, "
+            "     (select ph2.cardname, ph2.setname, max(timestamp) as lastdate "
+            "      from {0} ph2 "
+            "      group by ph2.cardname, ph2.setname) mr "
+            "where ph.timestamp = mr.lastdate "
+            "and ph.cardname = mr.cardname "
+            "and ph.setname = mr.setname ").format(tablename)
+
+    # Do the thing
+    results = connection.execute(query)
+    recent_df = pd.read_sql(query, connection)
+    connection.close()
+    return recent_df.sample(rows)
+
+if __name__ == "__main__":
+    # run tessssts
+    recent_df = query_rarity_dfs('rare')
+    print(recent_df)
 
 

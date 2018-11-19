@@ -146,7 +146,7 @@ class CreatureFeatureTransformer(BaseEstimator, TransformerMixin):
         # Creature Features
         def pt_type(row):
             if (type(row['power']) == type('str')) and (type(row['toughness']) == type('str')):
-                if '*' in row['power']+row['toughness'] or row['toughness']=='0':
+                if '*' in row['power']+row['toughness'] or row['toughness']<='0':
                     return 'variable'
                 return 'static'
             return 'none'
@@ -154,12 +154,12 @@ class CreatureFeatureTransformer(BaseEstimator, TransformerMixin):
             if row['pt_type']=='static': 
                 return int(row['power'])
             else:
-                return row['power']
+                return 0
         def tough_to_int(row):
             if row['pt_type']=='static':
                 return int(row['toughness'])
             else:
-                return row['toughness']
+                return 0
 
         # Create pt_type feature, convert static pts to ints
         df['pt_type'] = df.apply(pt_type, axis=1)
@@ -171,12 +171,35 @@ class CreatureFeatureTransformer(BaseEstimator, TransformerMixin):
 
         # ACTUAL ENGINEERING
         df['p:t'] = df[mask]['power']/df[mask]['toughness']
-        # df['p*t'] = (df[mask]['power']+1)*(df[mask]['toughness']+1)
-        # df['sqrt_pt'] = df[mask]['p*t'].apply(math.sqrt)-1
         df['avg_pt'] = (df[mask]['power']+df[mask]['toughness'])/2
-        # df['cmc:p*t'] = df[mask]['cmc']/df[mask]['p*t']
         df['cmc:apt'] = df[mask]['cmc']/df[mask]['avg_pt']
 
+        return df
+
+class PlaneswalkerTransformer(BaseEstimator, TransformerMixin):
+    """Add engineered creature features to DataFrame."""
+
+    def fit(self, X, y=None):
+        """Does not save state"""
+
+        return self
+
+    def transform(self, X):
+        """Derives additional features used in the training of models."""
+        df = X.copy()
+        def loyal_type(row):
+            try:
+                loyal = int(row['loyalty'])
+                row['loyalty']=loyal
+                row['l_type']='static'
+                return row
+            except:
+                row['loyalty']=0
+                row['l_type']='variable'
+                return row
+
+        df = df.apply(loyal_type, axis=1)
+        
         return df
 
 def derive_features(X):
@@ -205,4 +228,38 @@ class SelectFeaturesTransformer(BaseEstimator, TransformerMixin):
 
         df = X.drop(self.features_to_drop, axis=1)
 
+        return df
+
+class ReadCSVTransformer(BaseEstimator, TransformerMixin):
+    """Clean up after reading CSV"""
+
+    def fit(self, X, y=None):
+        """Does not save state."""
+        return self
+
+    def transform(self, X):
+        """Drops unnamed column & duplicates, and sets id as index"""
+        df = X.copy()
+        df.drop(columns='Unnamed: 0', inplace=True)
+        df.drop_duplicates(inplace=True)
+        df.set_index('id', inplace=True)
+        return df
+
+class SetExclusionTransformer(BaseEstimator, TransformerMixin):
+    """Removes sets"""
+    def __init__(self):
+        self.Sets_to_drop = [
+            'Kaladesh Inventions',
+            'Zendikar Expeditions'
+        ]
+    def fit(self, X, y=None):
+        """Does not save state."""
+        return self
+
+    def transform(self, X):
+        """Drops unnamed column & duplicates, and sets id as index"""
+        df = X.copy()
+        df.drop(columns='Unnamed: 0', inplace=True)
+        df.drop_duplicates(inplace=True)
+        df.set_index('id', inplace=True)
         return df

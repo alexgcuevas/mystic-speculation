@@ -5,6 +5,7 @@ from sqlalchemy import create_engine
 import psycopg2
 
 def get_recent_price(card_row, version=2):
+    '''DEPRECATED'''
     # Card attributes on which to query
     cardname = card_row['name'].replace("'","''")
     setname = card_row['set_name'].replace("'","''")
@@ -27,18 +28,40 @@ def get_recent_price(card_row, version=2):
     connection.close()
     for r in results:
         print(r)
-        print("loading {0}'s price {1} at time {2} into dataframe:".format(cardname, r[3], r[2]))
+        print("loading {0}'s({1}) price = {2} at time {3} into dataframe".format(r[0], r[1], r[3], r[2]))
         return (r[2], r[3])
 
 def fill_recent_prices(cards_df):
+    '''DEPRECATED'''
     filled_df = cards_df.copy()
     filled_df[['recent_date','recent_price']] = cards_df.apply(get_recent_price, axis=1).apply(pd.Series)
     return filled_df
 
+def get_recent_prices(rarity, version=2):
+    tablename = rarity+'_price_history_'+str(version)
+    connection = connect_mystic()
+
+    query = ("select ph.cardname, ph.setname, ph.timestamp, ph.price "
+            "from {0} ph, "
+            "     (select ph2.cardname, ph2.setname, max(timestamp) as lastdate "
+            "      from {0} ph2 "
+            "      group by ph2.cardname, ph2.setname) mr "
+            "where ph.timestamp = mr.lastdate "
+            "and ph.cardname = mr.cardname "
+            "and ph.setname = mr.setname ").format(tablename)
+
+    # Do the thing
+    results = connection.execute(query)
+    recent_df = pd.read_sql(query, connection)
+    connection.close()
+    return recent_df
+
 def write_recent_prices(cards_df, rarities):
     for rarity in rarities:
-        filled_df = fill_recent_prices(cards_df[cards_df['rarity']==rarity])
-        filled_df.to_csv(path_or_buf='data/all_vintage_cards-{}_recent.csv'.format(rarity))
+        print('writing {} prices to csv'.format(rarity))
+        filled_df = get_recent_prices(rarity)
+        cards_df.join(filled_df, on=[''])
+        todo_df.to_csv(path_or_buf='data/all_vintage_cards-{}_recent.csv'.format(rarity))
 
 def connect_mystic():
     '''
@@ -64,5 +87,5 @@ def connect_mystic():
 
 if __name__ == "__main__":
     cards_df = pd.read_csv('data/all_vintage_cards.csv')
-    rarities = ['mythic', 'rare']
+    rarities = ['mythic','rare', 'uncommon', 'common']
     write_recent_prices(cards_df, rarities)
