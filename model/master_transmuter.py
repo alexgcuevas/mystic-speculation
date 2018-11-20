@@ -137,8 +137,8 @@ class DeriveFeaturesTransformer(BaseEstimator, TransformerMixin):
             except:
                 return 0
         # Difficulty casting
-        df['mana intensity'] = df['mana_cost'].apply(lambda x: colors(x))-2
-        df['color intensity'] = df['color_identity'].apply(lambda x: len(x)-2)
+        df['mana_intensity'] = df['mana_cost'].apply(lambda x: colors(x))-2
+        df['color_intensity'] = df['color_identity'].apply(lambda x: len(x)-2)
         return df
 
 class CreatureFeatureTransformer(BaseEstimator, TransformerMixin):
@@ -263,7 +263,10 @@ class SetExclusionTransformer(BaseEstimator, TransformerMixin):
             'Eternal Masters',
             'Modern Masters 2017',
             'Modern Masters 2015',
-            'Iconic Masters'
+            'Iconic Masters',
+            'Portal Second Age',
+            'Portal',
+            'The Dark'
         ]
     def fit(self, X, y=None):
         return self
@@ -315,14 +318,12 @@ class TestFillTransformer(BaseEstimator, TransformerMixin):
         """Enlarges test columns to equal train size"""
         df = X.copy()
         # Fill columns in train but not test with fill value
-        leftover = self.train_columns - set(X.columns)
-        for column in leftover:
-            df[column] = -1
+        missing = self.train_columns - set(X.columns)
+        if missing:
+            for column in missing:
+                df[column] = self.fill_value
+        # drop columns in test but not in train
+        df = df[list(self.train_columns)]
         return df
-
-def price_corrector(y_pred):
-    y_pred = np.array(y_pred) 
-    y_pred[y_pred < 0.10] = 0.10
-    return np.round(y_pred,1)
 
 
