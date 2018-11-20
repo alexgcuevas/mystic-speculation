@@ -332,6 +332,7 @@ class TypelineTransformer(BaseEstimator, TransformerMixin):
         self.card_types = set(['Creature','Land','Instant','Sorcery','Enchantment','Artifact','Planeswalker'])
         self.sub_types = set()
         self.type_mods = set()
+
     def fit(self, X, y=None):
         """identifies all subtypes"""
         # Cleave split cards and transforms
@@ -347,5 +348,10 @@ class TypelineTransformer(BaseEstimator, TransformerMixin):
     def transform(self, X):
         """Drops unnamed column & duplicates, and sets id as index"""
         df = X.copy()
-        df = pd.get_dummies(df, columns=self.dummy_features, prefix=self.dummy_features)
+
+        for card_type in self.card_types:
+            df['is_{}'.format(card_type)] = np.zeros(X.shape[0])
+
+        # Dummify card type membership, type_mod membership
+
         return df)
