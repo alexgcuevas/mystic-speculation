@@ -326,4 +326,26 @@ class TestFillTransformer(BaseEstimator, TransformerMixin):
         df = df[list(self.train_columns)]
         return df
 
+class TypelineTransformer(BaseEstimator, TransformerMixin):
+    """Creates Dummies for typeline"""
+    def __init__(self):
+        self.card_types = set(['Creature','Land','Instant','Sorcery','Enchantment','Artifact','Planeswalker'])
+        self.sub_types = set()
+        self.type_mods = set()
+    def fit(self, X, y=None):
+        """identifies all subtypes"""
+        # Cleave split cards and transforms
+        cards = [x.split('//') for x in X['type_line'].unique()]
+        for card in cards:
+            for subcard in card:
+                types = subcard.split(' — ')
+                self.type_mods.update(set(types[0].split()) - self.card_types)
+                try:
+                    self.sub_types.update(set(types[1].split()))
+        return self
 
+    def transform(self, X):
+        """Drops unnamed column & duplicates, and sets id as index"""
+        df = X.copy()
+        df = pd.get_dummies(df, columns=self.dummy_features, prefix=self.dummy_features)
+        return df)
