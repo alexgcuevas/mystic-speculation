@@ -331,7 +331,7 @@ class TypelineTransformer(BaseEstimator, TransformerMixin):
     def __init__(self):
         self.card_types = set(['Creature','Land','Instant','Sorcery','Enchantment','Artifact','Planeswalker'])
         self.sub_types = set()
-        self.type_mods = set()
+        self.mod_types = set()
 
     def fit(self, X, y=None):
         """identifies all subtypes"""
@@ -340,7 +340,7 @@ class TypelineTransformer(BaseEstimator, TransformerMixin):
         for card in cards:
             for subcard in card:
                 types = subcard.split(' — ')
-                self.type_mods.update(set(types[0].split()) - self.card_types)
+                self.mod_types.update(set(types[0].split()) - self.card_types)
                 try:
                     self.sub_types.update(set(types[1].split()))
                 except:
@@ -371,12 +371,36 @@ class TypelineTransformer(BaseEstimator, TransformerMixin):
             return row
 
         def type_dummies(row):
-            for card_type in list(self.card_types):
+            for card_type in self.card_types:
                 row[card_type] = 1*(card_type in row['card_types'])
             return row
 
         df = df.apply(type_sets, axis=1)
         # Dummify card type membership, type_mod membership
         df = df.apply(type_dummies, axis=1)
+
+        return df
+
+
+class ColorIDTransformer(BaseEstimator, TransformerMixin):
+    """Creates Dummies for color identity"""
+    def __init__(self):
+        self.colors = set(['W','U','B','R','G'])
+
+    def fit(self, X, y=None):
+        """No saved state"""
+        return self
+
+    def transform(self, X):
+        """Dummifies color identity for each card"""
+        df = X.copy()
+
+        def color_dummies(row):
+            for color in self.colors:
+                row[color] = 1*(color in row['color_identity'])
+            return row
+
+        # Dummify color identity membership
+        df = df.apply(color_dummies, axis=1)
 
         return df
