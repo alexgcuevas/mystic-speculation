@@ -228,6 +228,9 @@ class DropFeaturesTransformer(BaseEstimator, TransformerMixin):
             ,'color_identity'
             ,'legalities'
             ,'timestamp'
+            ,'card_types'
+            ,'mod_types'
+            ,'sub_types'
             # ,'price'
         ]
 
@@ -380,7 +383,6 @@ class TypelineTransformer(BaseEstimator, TransformerMixin):
         df = df.apply(type_dummies, axis=1)
 
         return df
-
 
 class ColorIDTransformer(BaseEstimator, TransformerMixin):
     """Creates Dummies for color identity"""
