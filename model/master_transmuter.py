@@ -343,15 +343,40 @@ class TypelineTransformer(BaseEstimator, TransformerMixin):
                 self.type_mods.update(set(types[0].split()) - self.card_types)
                 try:
                     self.sub_types.update(set(types[1].split()))
+                except:
+                    pass
+                    
         return self
 
     def transform(self, X):
         """Drops unnamed column & duplicates, and sets id as index"""
         df = X.copy()
 
-        for card_type in self.card_types:
-            df['is_{}'.format(card_type)] = np.zeros(X.shape[0])
+        def type_sets(row):
+            card_types = set()
+            sub_types = set()
+            mod_types = set()
+            card = row['type_line'].split('//')
+            for subcard in card:
+                types = subcard.split(' — ')
+                card_types.update(set(types[0].split()) & self.card_types)
+                mod_types.update(set(types[0].split()) - self.card_types)
+                try:
+                    sub_types.update(set(types[1].split()))
+                except:
+                    pass
+            row['card_types'] = card_types
+            row['mod_types'] = mod_types
+            row['sub_types'] = sub_types
+            return row
 
+        def type_dummies(row):
+            for card_type in list(self.card_types):
+                row[card_type] = 1*(card_type in row['card_types'])
+            return row
+
+        df = df.apply(type_sets, axis=1)
         # Dummify card type membership, type_mod membership
+        df = df.apply(type_dummies, axis=1)
 
-        return df)
+        return df
