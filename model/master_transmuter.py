@@ -2,6 +2,7 @@ import numpy as np
 import pandas as pd
 import math
 import matplotlib.pyplot as plt
+import re
 from sklearn.pipeline import Pipeline
 from sklearn.base import BaseEstimator, TransformerMixin
 
@@ -116,7 +117,7 @@ class FillTransformer(BaseEstimator, TransformerMixin):
         df.fillna(self.fill_value, axis=1, inplace=True)
         return df
 
-class DeriveFeaturesTransformer(BaseEstimator, TransformerMixin):
+class CostIntensityTransformer(BaseEstimator, TransformerMixin):
     """Add engineered features to DataFrame."""
 
     def fit(self, X, y=None):
@@ -255,22 +256,29 @@ def csv_cleaner(df, y_col='price'):
 
 class SetExclusionTransformer(BaseEstimator, TransformerMixin):
     """Removes sets"""
-    def __init__(self):
-        self.sets_to_drop = [
-            'Kaladesh Inventions',
-            'Zendikar Expeditions',
-            'Portal Three Kingdoms',
-            'Legends',
-            'Arabian Nights',
-            'Modern Masters',
-            'Eternal Masters',
-            'Modern Masters 2017',
-            'Modern Masters 2015',
-            'Iconic Masters',
-            'Portal Second Age',
-            'Portal',
-            'The Dark'
-        ]
+    def __init__(self, sets_to_drop=[]):
+        if sets_to_drop:
+            self.sets_to_drop = sets_to_drop
+        else:
+            self.sets_to_drop = [
+                'Kaladesh Inventions',
+                'Zendikar Expeditions',
+                'Portal Three Kingdoms',
+                'Legends',
+                'Arabian Nights',
+                'Modern Masters',
+                'Eternal Masters',
+                'Modern Masters 2017',
+                'Modern Masters 2015',
+                'Iconic Masters',
+                'Portal Second Age',
+                'Portal',
+                'The Dark',
+                # 'Commander 2013',
+                # 'Commander 2014',
+                # 'Commander 2015',
+                # 'Commander 2016',
+            ]
     def fit(self, X, y=None):
         return self
 
@@ -376,6 +384,8 @@ class TypelineTransformer(BaseEstimator, TransformerMixin):
         def type_dummies(row):
             for card_type in self.card_types:
                 row[card_type] = 1*(card_type in row['card_types'])
+            for mod_type in self.mod_types:
+                row[mod_type] = 1*(mod_type in row['mod_types'])
             return row
 
         df = df.apply(type_sets, axis=1)
@@ -404,5 +414,31 @@ class ColorIDTransformer(BaseEstimator, TransformerMixin):
 
         # Dummify color identity membership
         df = df.apply(color_dummies, axis=1)
+
+        return df
+
+class AbilityCountsTransformer(BaseEstimator, TransformerMixin):
+    """Creates counts for various ability types"""
+
+    def fit(self, X, y=None):
+        """No saved state"""
+        return self
+
+    def transform(self, X):
+        """Reads text and counts ability blocks, activated, and triggered abilities"""
+        df = X.copy()
+
+        def count_abilities(row):
+            txt = row['oracle_text']
+            # Count ability blocks
+            row['ability_sects'] = len(txt.split('\r\r\n'))
+            # Count activated
+            row['activated'] = txt.count(':')            
+            # Count triggered
+            row['triggered'] = len(re.findall('When|At',txt))
+            return row
+
+        # Dummify color identity membership
+        df = df.apply(count_abilities, axis=1)
 
         return df
