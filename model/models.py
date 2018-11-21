@@ -14,8 +14,36 @@ from sklearn.model_selection import train_test_split
 from sklearn.model_selection import cross_val_score
 from sklearn.model_selection import GridSearchCV
 
+def format_results(X_test, y_pred, y_test):
+    results_df = X_test.copy()
+    results_df['y_pred'] = y_pred
+    results_df['y_test'] = y_test
+    results_df['log_diff'] = np.abs(np.log(y_pred+1) - np.log(y_test+1))
+    return results_df
+
+def baseline_model(X_train, X_test, y_train, y_test):
+    """guesses mean price by rarity only"""
+
+    # The set-up (you need this)
+    y_train_log = np.log(y_train)
+    y_pred_log = np.ones(y_test.shape)*avg
+
+    # Fit & Predict
+    for rarity in X_train['rarity'].unique():
+        mask = X_train['rarity']==rarity
+        avg = y_train_log[mask].mean()
+        y_pred_log[mask] = avg
+
+    y_pred = price_corrector(np.exp(y_pred_log))
+
+    results_df = format_results(X_test, y_pred, y_test)
+    score = log_score(y_pred, y_test)
+
+    return results_df, score
+
 def fit_basic_pipeline(X_train, X_test, y_train, y_test):
 
+    # The set-up (you need this)
     pipe = Pipeline([
         ('CreatureFeature', CreatureFeatureTransformer()),
         ('Planeswalker', PlaneswalkerTransformer()),
@@ -29,38 +57,16 @@ def fit_basic_pipeline(X_train, X_test, y_train, y_test):
     ])
 
     y_train_log = np.log(y_train)
-    # y_test_log = np.log(y_test)
 
+    # Fit & Predict
     pipe.fit(X_train, y_train_log)
     y_pred_log = pipe.predict(X_test)
     y_pred = price_corrector(np.exp(y_pred_log))
 
-    results_df = X_test.copy()
-    results_df['y_pred'] = y_pred
-    results_df['y_test'] = y_test
-    results_df['log_diff'] = np.abs(np.log(y_pred+1) - np.log(y_test+1))
+    results_df = format_results(X_test, y_pred, y_test)
     score = log_score(y_pred, y_test)
 
     return pipe, results_df, score
-
-def baseline_model(X_train, X_test, y_train, y_test):
-    """guesses mean price by rarity only"""
-
-    y_train_log = np.log(y_train)
-
-    # rarity_dummy = create
-    avg = y_train_log.mean()
-
-    y_pred_log = np.ones(y_test.shape)*avg
-    y_pred = price_corrector(np.exp(y_pred_log))
-
-    results_df = X_test.copy()
-    results_df['y_pred'] = y_pred
-    results_df['y_test'] = y_test
-    results_df['log_diff'] = np.abs(np.log(y_pred+1) - np.log(y_test+1))
-    score = log_score(y_pred, y_test)
-
-    return results_df, score
 
 def plot_residuals(y_pred, y_test, title):
     fig, axs = plt.subplots(1,2, figsize=(20,10))
