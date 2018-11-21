@@ -6,9 +6,12 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
+
 from sklearn.pipeline import Pipeline
 from sklearn.ensemble import GradientBoostingRegressor
 from sklearn.model_selection import train_test_split
+from sklearn.model_selection import cross_val_score
+from sklearn.model_selection import GridSearchCV
 
 def fit_basic_pipeline(X_train, X_test, y_train, y_test):
 
@@ -105,12 +108,12 @@ def fit_refine_pipeline(X_train, X_test, y_train, y_test):
         ('BoolToInt', BoolTransformer()),
         ('CreatureFeature', CreatureFeatureTransformer()),
         ('Planeswalker', PlaneswalkerTransformer()),
+        ('AbilityCounts', AbilityCountsTransformer()),
         ('Fillna', FillTransformer()),
         ('CostIntensity', CostIntensityTransformer()),
         ('CreateDummies', CreateDummiesTransformer()),
         ('DummifyType', TypelineTransformer()),
         ('DummifyColorID', ColorIDTransformer()),
-        ('AbilityCounts', AbilityCountsTransformer()),
         ('DropFeatures', DropFeaturesTransformer()),
         ('TestFill', TestFillTransformer()),
         ('GradientBoostingRegressor', GradientBoostingRegressor())

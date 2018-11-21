@@ -430,12 +430,21 @@ class AbilityCountsTransformer(BaseEstimator, TransformerMixin):
 
         def count_abilities(row):
             txt = row['oracle_text']
+            if pd.isnull(txt):
+                txt = ''
+                row['ability_sects'] = len(txt.split('\r\r\n'))
+            else:
+                row['ability_sects'] = len(txt.split('\r\r\n'))
+
             # Count ability blocks
             row['ability_sects'] = len(txt.split('\r\r\n'))
             # Count activated
             row['activated'] = txt.count(':')            
             # Count triggered
-            row['triggered'] = len(re.findall('When|At',txt))
+            row['triggered'] = len(re.findall('When|At|As',txt))
+            # Count mana abilities
+            row['mana_abilities'] = len(re.findall('Add|add', txt))
+            
             return row
 
         # Dummify color identity membership
