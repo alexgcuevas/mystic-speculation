@@ -26,13 +26,14 @@ def baseline_model(X_train, X_test, y_train, y_test):
 
     # The set-up (you need this)
     y_train_log = np.log(y_train)
-    y_pred_log = np.ones(y_test.shape)*avg
+    y_pred_log = np.ones(y_test.shape)
 
     # Fit & Predict
     for rarity in X_train['rarity'].unique():
-        mask = X_train['rarity']==rarity
-        avg = y_train_log[mask].mean()
-        y_pred_log[mask] = avg
+        train_mask = X_train['rarity']==rarity
+        avg = y_train_log[train_mask].mean()
+        test_mask = X_test['rarity']==rarity
+        y_pred_log[test_mask] = avg
 
     y_pred = price_corrector(np.exp(y_pred_log))
 
