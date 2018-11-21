@@ -186,5 +186,15 @@ def pipe_feature_imports(pipe):
     feature_importances = np.array([features, feature_importances]).T
     return pd.DataFrame(feature_importances[feature_importances[:,1].argsort()[::-1]], columns=['feature','importance'])
 
-def run_model_against_baseline(raw_df):
+def run_model_against_baseline(model, raw_df, log_y=True, n_folds=5):
+    # Run data through cleaner
+    
+    # log y_train if applicable
+    
+    # Cross-validate model & predict
+    
+    # Unlog y_pred if applicable
+
+    # Format & plot results
+    
     pass
