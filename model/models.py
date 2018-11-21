@@ -7,6 +7,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
 
+from sklearn.linear_model import LinearRegression
 from sklearn.pipeline import Pipeline
 from sklearn.ensemble import GradientBoostingRegressor
 from sklearn.model_selection import train_test_split
@@ -43,11 +44,11 @@ def fit_basic_pipeline(X_train, X_test, y_train, y_test):
     return pipe, results_df, score
 
 def baseline_model(X_train, X_test, y_train, y_test):
-    """guesses mean price for everything"""
+    """guesses mean price by rarity only"""
 
     y_train_log = np.log(y_train)
-    # y_test_log = np.log(y_test)
 
+    # rarity_dummy = create
     avg = y_train_log.mean()
 
     y_pred_log = np.ones(y_test.shape)*avg
@@ -74,15 +75,48 @@ def plot_residuals(y_pred, y_test, title):
     lin_ax.set_xlim(0,max(y_test.max(), y_pred.max()))
     lin_ax.set_ylim(0,max(y_test.max(), y_pred.max()))
 
-    log_ax.scatter(np.log(y_test), np.log(y_pred), label='log preds', alpha=0.5)
-    log_ax.scatter(np.log(y_test), np.log(y_test), label='log actuals', alpha=0.5)
+    log_ax.scatter(np.log(y_test+1), np.log(y_pred+1), label='log preds', alpha=0.5)
+    log_ax.scatter(np.log(y_test+1), np.log(y_test+1), label='log actuals', alpha=0.5)
     log_ax.set_title('{} log predictions vs actual'.format(title))
     log_ax.set_ylabel('predicted log prices')
     log_ax.set_xlabel('actual log prices')
-    log_ax.set_xlim(0,max(np.log(y_test).max(), np.log(y_pred).max()))
-    log_ax.set_ylim(0,max(np.log(y_test).max(), np.log(y_pred).max()))
+    logs = np.log(y_test.append(y_pred)+1)
+    log_ax.set_xlim(logs.min(),logs.max())
+    log_ax.set_ylim(logs.min(),logs.max())
 
     plt.legend()
+    plt.show()
+
+def plot_residuals_vs_baseline(results_df, baseline_df, title):
+    fig, axs = plt.subplots(1,2, figsize=(20,10))
+    lin_ax = axs[0]
+    log_ax = axs[1]
+
+    y_test = results_df['y_test']
+    y_pred = results_df['y_pred']
+    y_base = baseline_df['y_pred']
+
+    lin_ax.scatter(y_test, y_pred, label='preds', alpha=0.5)
+    lin_ax.scatter(y_test, y_test, label='actuals', alpha=0.5)
+    lin_ax.scatter(y_test, y_base, label='baseline', alpha=0.5)    
+    lin_ax.set_title('{} predictions vs actual'.format(title))
+    lin_ax.set_ylabel('predicted prices')
+    lin_ax.set_xlabel('actual prices')
+    lin_ax.set_xlim(0,max(y_test.max(), y_pred.max()))
+    lin_ax.set_ylim(0,max(y_test.max(), y_pred.max()))
+
+    log_ax.scatter(np.log(y_test+1), np.log(y_pred+1), label='log preds', alpha=0.5)
+    log_ax.scatter(np.log(y_test+1), np.log(y_test+1), label='log actuals', alpha=0.5)
+    log_ax.scatter(np.log(y_test+1), np.log(y_base+1), label='baseline', alpha=0.5)        
+    log_ax.set_title('{} log predictions vs actual'.format(title))
+    log_ax.set_ylabel('predicted log prices')
+    log_ax.set_xlabel('actual log prices')
+    logs = np.log(y_test.append(y_pred)+1)
+    log_ax.set_xlim(logs.min(),logs.max())
+    log_ax.set_ylim(logs.min(),logs.max())
+
+    lin_ax.legend()
+    log_ax.legend()
     plt.show()
 
 def plot_pred_hist(y_pred, y_test, title):
@@ -133,3 +167,18 @@ def fit_refine_pipeline(X_train, X_test, y_train, y_test):
     score = log_score(y_pred, y_test)
 
     return pipe, results_df, score
+
+def pipe_feature_imports(pipe):
+    """
+    Takes in pipeline with decision tree as estimator,
+    returns dataframe of feature importances
+    """
+    model = pipe.steps[-1][1]
+    features = list(pipe.steps[-2][1].train_columns)
+    feature_importances = np.round(model.feature_importances_,4)
+
+    feature_importances = np.array([features, feature_importances]).T
+    return pd.DataFrame(feature_importances[feature_importances[:,1].argsort()[::-1]], columns=['feature','importance'])
+
+def run_model_against_baseline(raw_df):
+    pass

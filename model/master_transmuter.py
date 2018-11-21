@@ -301,9 +301,8 @@ class BoolTransformer(BaseEstimator, TransformerMixin):
 
 class CreateDummiesTransformer(BaseEstimator, TransformerMixin):
     """Creates Dummies for given features"""
-    def __init__(self):
-        self.dummy_features = ['rarity','layout','pt_type','l_type']
-        self.prefix = 'mvp'
+    def __init__(self, dummy_features=['rarity','layout','pt_type','l_type']):
+        self.dummy_features = dummy_features
 
     def fit(self, X, y=None):
         """Does not save state."""
