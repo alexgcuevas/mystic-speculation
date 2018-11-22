@@ -1,0 +1,198 @@
+begin_date,end_date,season,sets
+9/30/2011,2/2/2012,1,Scars of Mirrodin
+9/30/2011,2/2/2012,1,New Phyrexia
+9/30/2011,2/2/2012,1,Mirrodin Besieged
+9/30/2011,2/2/2012,1,M12
+9/30/2011,2/2/2012,1,Innistrad
+2/3/2012,5/3/2012,2,Scars of Mirrodin
+2/3/2012,5/3/2012,2,New Phyrexia
+2/3/2012,5/3/2012,2,Mirrodin Besieged
+2/3/2012,5/3/2012,2,M12
+2/3/2012,5/3/2012,2,Innistrad
+2/3/2012,5/3/2012,2,Dark Ascension
+5/4/2012,7/12/2012,3,Scars of Mirrodin
+5/4/2012,7/12/2012,3,New Phyrexia
+5/4/2012,7/12/2012,3,Mirrodin Besieged
+5/4/2012,7/12/2012,3,M12
+5/4/2012,7/12/2012,3,Innistrad
+5/4/2012,7/12/2012,3,Dark Ascension
+5/4/2012,7/12/2012,3,Avacyn Restored
+7/13/2012,10/4/2012,4,Scars of Mirrodin
+7/13/2012,10/4/2012,4,New Phyrexia
+7/13/2012,10/4/2012,4,Mirrodin Besieged
+7/13/2012,10/4/2012,4,M13
+7/13/2012,10/4/2012,4,M12
+7/13/2012,10/4/2012,4,Innistrad
+7/13/2012,10/4/2012,4,Dark Ascension
+7/13/2012,10/4/2012,4,Avacyn Restored
+10/5/2012,1/31/2013,5,Return to Ravnica
+10/5/2012,1/31/2013,5,M13
+10/5/2012,1/31/2013,5,Innistrad
+10/5/2012,1/31/2013,5,Dark Ascension
+10/5/2012,1/31/2013,5,Avacyn Restored
+2/1/2013,5/2/2013,6,Return to Ravnica
+2/1/2013,5/2/2013,6,M13
+2/1/2013,5/2/2013,6,Innistrad
+2/1/2013,5/2/2013,6,Gatecrash
+2/1/2013,5/2/2013,6,Dark Ascension
+2/1/2013,5/2/2013,6,Avacyn Restored
+5/3/2013,7/12/2013,7,Return to Ravnica
+5/3/2013,7/12/2013,7,M13
+5/3/2013,7/12/2013,7,Innistrad
+5/3/2013,7/12/2013,7,Gatecrash
+5/3/2013,7/12/2013,7,Dragon's Maze
+5/3/2013,7/12/2013,7,Dark Ascension
+5/3/2013,7/12/2013,7,Avacyn Restored
+7/13/2013,9/26/2013,8,Return to Ravnica
+7/13/2013,9/26/2013,8,M14
+7/13/2013,9/26/2013,8,M13
+7/13/2013,9/26/2013,8,Innistrad
+7/13/2013,9/26/2013,8,Gatecrash
+7/13/2013,9/26/2013,8,Dragon's Maze
+7/13/2013,9/26/2013,8,Dark Ascension
+7/13/2013,9/26/2013,8,Avacyn Restored
+9/27/2013,2/6/2014,9,Theros
+9/27/2013,2/6/2014,9,Return to Ravnica
+9/27/2013,2/6/2014,9,M14
+9/27/2013,2/6/2014,9,Gatecrash
+9/27/2013,2/6/2014,9,Dragon's Maze
+2/7/2014,5/1/2014,10,Theros
+2/7/2014,5/1/2014,10,Return to Ravnica
+2/7/2014,5/1/2014,10,M14
+2/7/2014,5/1/2014,10,Gatecrash
+2/7/2014,5/1/2014,10,Dragon's Maze
+2/7/2014,5/1/2014,10,Born of the Gods
+5/2/2014,7/17/2014,11,Theros
+5/2/2014,7/17/2014,11,Return to Ravnica
+5/2/2014,7/17/2014,11,M14
+5/2/2014,7/17/2014,11,Journey Into Nyx
+5/2/2014,7/17/2014,11,Gatecrash
+5/2/2014,7/17/2014,11,Dragon's Maze
+5/2/2014,7/17/2014,11,Born of the Gods
+7/18/2014,9/25/2014,12,Theros
+7/18/2014,9/25/2014,12,Return to Ravnica
+7/18/2014,9/25/2014,12,M15
+7/18/2014,9/25/2014,12,M14
+7/18/2014,9/25/2014,12,Journey Into Nyx
+7/18/2014,9/25/2014,12,Gatecrash
+7/18/2014,9/25/2014,12,Dragon's Maze
+7/18/2014,9/25/2014,12,Born of the Gods
+9/26/2014,1/22/2015,13,Theros
+9/26/2014,1/22/2015,13,M15
+9/26/2014,1/22/2015,13,Khans of Tarkir
+9/26/2014,1/22/2015,13,Journey Into Nyx
+9/26/2014,1/22/2015,13,Born of the Gods
+1/23/2015,3/26/2015,14,Theros
+1/23/2015,3/26/2015,14,M15
+1/23/2015,3/26/2015,14,Khans of Tarkir
+1/23/2015,3/26/2015,14,Journey Into Nyx
+1/23/2015,3/26/2015,14,Fate Reforged
+1/23/2015,3/26/2015,14,Born of the Gods
+3/27/2015,7/16/2015,15,Theros
+3/27/2015,7/16/2015,15,M15
+3/27/2015,7/16/2015,15,Khans of Tarkir
+3/27/2015,7/16/2015,15,Journey Into Nyx
+3/27/2015,7/16/2015,15,Fate Reforged
+3/27/2015,7/16/2015,15,Dragons of Tarkir
+3/27/2015,7/16/2015,15,Born of the Gods
+7/17/2015,10/1/2015,16,Theros
+7/17/2015,10/1/2015,16,Magic Origins
+7/17/2015,10/1/2015,16,M15
+7/17/2015,10/1/2015,16,Khans of Tarkir
+7/17/2015,10/1/2015,16,Journey Into Nyx
+7/17/2015,10/1/2015,16,Fate Reforged
+7/17/2015,10/1/2015,16,Dragons of Tarkir
+7/17/2015,10/1/2015,16,Born of the Gods
+10/2/2015,1/21/2016,17,Magic Origins
+10/2/2015,1/21/2016,17,Khans of Tarkir
+10/2/2015,1/21/2016,17,Fate Reforged
+10/2/2015,1/21/2016,17,Dragons of Tarkir
+10/2/2015,1/21/2016,17,Battle For Zendikar
+1/22/2016,4/7/2016,18,Oath of the Gatewatch
+1/22/2016,4/7/2016,18,Magic Origins
+1/22/2016,4/7/2016,18,Khans of Tarkir
+1/22/2016,4/7/2016,18,Fate Reforged
+1/22/2016,4/7/2016,18,Dragons of Tarkir
+1/22/2016,4/7/2016,18,Battle For Zendikar
+4/8/2016,7/21/2016,19,Shadows Over Innistrad
+4/8/2016,7/21/2016,19,Oath of the Gatewatch
+4/8/2016,7/21/2016,19,Magic Origins
+4/8/2016,7/21/2016,19,Dragons of Tarkir
+4/8/2016,7/21/2016,19,Battle For Zendikar
+7/22/2016,9/29/2016,20,Shadows Over Innistrad
+7/22/2016,9/29/2016,20,Oath of the Gatewatch
+7/22/2016,9/29/2016,20,Magic Origins
+7/22/2016,9/29/2016,20,Eldritch Moon
+7/22/2016,9/29/2016,20,Dragons of Tarkir
+7/22/2016,9/29/2016,20,Battle For Zendikar
+9/30/2016,1/19/2017,21,Shadows Over Innistrad
+9/30/2016,1/19/2017,21,Oath of the Gatewatch
+9/30/2016,1/19/2017,21,Kaladesh
+9/30/2016,1/19/2017,21,Eldritch Moon
+9/30/2016,1/19/2017,21,Battle For Zendikar
+1/20/2017,4/27/2017,22,Shadows Over Innistrad
+1/20/2017,4/27/2017,22,Oath of the Gatewatch
+1/20/2017,4/27/2017,22,Kaladesh
+1/20/2017,4/27/2017,22,Eldritch Moon
+1/20/2017,4/27/2017,22,Battle For Zendikar
+1/20/2017,4/27/2017,22,Aether Revolt
+4/28/2017,6/18/2017,23,Shadows Over Innistrad
+4/28/2017,6/18/2017,23,Oath of the Gatewatch
+4/28/2017,6/18/2017,23,Kaladesh
+4/28/2017,6/18/2017,23,Eldritch Moon
+4/28/2017,6/18/2017,23,Battle For Zendikar
+4/28/2017,6/18/2017,23,Amonkhet
+4/28/2017,6/18/2017,23,Aether Revolt
+6/19/2017,7/13/2017,24,Shadows Over Innistrad
+6/19/2017,7/13/2017,24,Oath of the Gatewatch
+6/19/2017,7/13/2017,24,Kaladesh
+6/19/2017,7/13/2017,24,Eldritch Moon
+6/19/2017,7/13/2017,24,Battle For Zendikar
+6/19/2017,7/13/2017,24,Amonkhet
+6/19/2017,7/13/2017,24,Aether Revolt
+7/14/2017,9/28/2017,25,Shadows Over Innistrad
+7/14/2017,9/28/2017,25,Oath of the Gatewatch
+7/14/2017,9/28/2017,25,Kaladesh
+7/14/2017,9/28/2017,25,Hour of Devastation
+7/14/2017,9/28/2017,25,Eldritch Moon
+7/14/2017,9/28/2017,25,Battle For Zendikar
+7/14/2017,9/28/2017,25,Amonkhet
+7/14/2017,9/28/2017,25,Aether Revolt
+9/29/2017,1/18/2018,26,Kaladesh
+9/29/2017,1/18/2018,26,Ixalan
+9/29/2017,1/18/2018,26,Hour of Devastation
+9/29/2017,1/18/2018,26,Amonkhet
+9/29/2017,1/18/2018,26,Aether Revolt
+1/19/2018,4/26/2018,27,Rivals of Ixalan
+1/19/2018,4/26/2018,27,Kaladesh
+1/19/2018,4/26/2018,27,Ixalan
+1/19/2018,4/26/2018,27,Hour of Devastation
+1/19/2018,4/26/2018,27,Amonkhet
+1/19/2018,4/26/2018,27,Aether Revolt
+4/27/2018,6/21/2018,28,Rivals of Ixalan
+4/27/2018,6/21/2018,28,Kaladesh
+4/27/2018,6/21/2018,28,Ixalan
+4/27/2018,6/21/2018,28,Hour of Devastation
+4/27/2018,6/21/2018,28,Dominaria
+4/27/2018,6/21/2018,28,Amonkhet
+4/27/2018,6/21/2018,28,Aether Revolt
+6/22/2018,7/13/2018,29,Rivals of Ixalan
+6/22/2018,7/13/2018,29,Kaladesh
+6/22/2018,7/13/2018,29,Ixalan
+6/22/2018,7/13/2018,29,Hour of Devastation
+6/22/2018,7/13/2018,29,Dominaria
+6/22/2018,7/13/2018,29,Amonkhet
+6/22/2018,7/13/2018,29,Aether Revolt
+7/13/2018,10/5/2018,30,Rivals of Ixalan
+7/13/2018,10/5/2018,30,Kaladesh
+7/13/2018,10/5/2018,30,Ixalan
+7/13/2018,10/5/2018,30,Hour of Devastation
+7/13/2018,10/5/2018,30,Dominaria
+7/13/2018,10/5/2018,30,Core Set 2019
+7/13/2018,10/5/2018,30,Amonkhet
+7/13/2018,10/5/2018,30,Aether Revolt
+10/5/2018,11/16/2018,31,Rivals of Ixalan
+10/5/2018,11/16/2018,31,Ixalan
+10/5/2018,11/16/2018,31,Guilds of Ravnica
+10/5/2018,11/16/2018,31,Dominaria
+10/5/2018,11/16/2018,31,Core Set 2019
