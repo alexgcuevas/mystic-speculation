@@ -189,7 +189,7 @@ def pipe_feature_imports(pipe):
 
 def run_model_against_baseline(model, raw_df, log_y=True, n_folds=5):
     # Run data through cleaner
-    
+    X, y = csv_cleaner(model)
     # log y_train if applicable
     
     # Cross-validate model & predict

@@ -51,7 +51,24 @@ def get_recent_prices(rarity, version=2):
             "and ph.setname = mr.setname ").format(tablename)
 
     # Do the thing
-    results = connection.execute(query)
+    recent_df = pd.read_sql(query, connection)
+    connection.close()
+    return recent_df
+
+def get_price_history(rarity, version=2):
+    tablename = rarity+'_price_history_'+str(version)
+    connection = connect_mystic()
+
+    query = ("select ph.cardname, ph.setname, ph.timestamp, ph.price "
+            "from {0} ph, "
+            "     (select ph2.cardname, ph2.setname, max(timestamp) as lastdate "
+            "      from {0} ph2 "
+            "      group by ph2.cardname, ph2.setname) mr "
+            "where ph.timestamp = mr.lastdate "
+            "and ph.cardname = mr.cardname "
+            "and ph.setname = mr.setname ").format(tablename)
+
+    # Do the thing
     recent_df = pd.read_sql(query, connection)
     connection.close()
     return recent_df
