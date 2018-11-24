@@ -80,6 +80,23 @@ def write_recent_prices(cards_df, rarities):
         cards_df.join(filled_df, on=[''])
         todo_df.to_csv(path_or_buf='data/all_vintage_cards-{}_recent.csv'.format(rarity))
 
+def avg_price_by_season(seasons, tablename):
+    c=1000000000
+    connection = connect_mystic()
+    seasons_df = pd.DataFrame(columns=['cardname','setname'])
+    for season in seasons:
+        # to timestamp
+        start = str(int(pd.Timestamp(season[0]).value/c))
+        end = str(int(pd.Timestamp(season[1]).value/c))
+        query = ("select cardname, setname, avg(price) as s{3} "
+                 "from {0} "
+                 "where cast(timestamp as float)/1000 > {1} and cast(timestamp as float)/1000 < {2} "
+                 "group by cardname, setname ").format(tablename,start,end,season[2])
+        season_df = pd.read_sql(query, connection)
+        seasons_df = seasons_df.merge(season_df, on=['cardname','setname'], how='outer')
+    connection.close()
+    return seasons_df
+
 def connect_mystic():
     '''
     Connects to mystic-speculation database, returns connection object
