@@ -118,19 +118,22 @@ for season in seasons:
              "  and cast(timestamp as float) <= {END}) "
              " "
              ",timeleads as "
-             "(select *, lead(timestamp) over (order by timestamp) timelead "
+             "(select *, lead(timestamp) over (partition by cardname, setname order by timestamp) timelead "
              "from add_season_bookends) "
              " "
              ",diffs as "
-             "(select *, datediff(day, timestamp, timelead) as daydiff "
+             "(select *, date_part('day', to_timestamp(cast(timelead as float)) - to_timestamp(cast(timestamp as float))) as daydiff "
              "from timeleads) "
              " "
-             "select cardname, setname, sum(daydiff*price)/sum(day_diff) as s{SEASON}"
-             " from diffs").format(START=start, END=end, TABLENAME=tablename, SEASON=season[2])
+             "select cardname, setname, sum(daydiff*price)/sum(daydiff) as s{SEASON} "
+             "from diffs "
+             "group by cardname, setname ").format(START=start, END=end, TABLENAME=tablename, SEASON=season[2])
     season_df = pd.read_sql(query, connection)
     seasons_df = seasons_df.merge(season_df, on=['cardname','setname'], how='outer')
 
 seasons_df.drop(columns=['cardname','setname'], inplace=True)
+
+seasons_df.head()
 plt.plot(seasons_df.sum())
 plt.show()
 connection.close()
@@ -151,3 +154,34 @@ connection.close()
     seasons_df = seasons_df.merge(season_df, on=['cardname','setname'], how='outer')
 connection.close()
 return seasons_df
+
+""" testing seasonal avg price writing for mythics"""
+rarities = ['mythic','rare', 'uncommon', 'common']
+for rarity in rarities:
+    seasonal_averages = pd.read_csv('data/all_vintage_cards-{}_seasonal_avg.csv'.format(rarity))
+    plt.plot(seasonal_averages.drop(columns=['cardname','setname','Unnamed: 0']).sum(), label=rarity)
+
+plt.legend()
+plt.show()
+
+
+""" plotting prices for standard legal cards only """
+
+std_seasons = pd.read_csv('data/standard_seasonality.csv')
+std_seasons.set_index('setname', inplace=True)
+
+def seasonal_mask(row):
+    for season in seasons:
+        row[season] = row[season]*std_seasons.loc[row['setname']][season]
+    return row
+
+rarities = ['mythic','rare', 'uncommon', 'common']
+for rarity in rarities:
+    seasonal_prices = pd.read_csv('data/all_vintage_cards-{}_seasonal_avg.csv'.format(rarity))
+    seasonal_prices.drop(columns='Unnamed: 0',inplace=True)
+    seasons = set(seasonal_prices.columns) and set(std_seasons.columns)
+    standard_prices = seasonal_prices.apply(seasonal_mask, axis=1) 
+    plt.plot(standard_prices.drop(columns=['cardname','setname']).sum(), label=rarity)
+
+plt.legend()
+plt.show()
