@@ -70,8 +70,8 @@ def write_recent_prices(cards_df, rarities):
     for rarity in rarities:
         print('writing {} prices to csv'.format(rarity))
         filled_df = get_recent_prices(rarity)
-        cards_df.join(filled_df, on=[''])
-        todo_df.to_csv(path_or_buf='data/all_vintage_cards-{}_recent.csv'.format(rarity))
+        merged = cards_df.merge(filled_df, on=['cardname','setname'])
+        merged.to_csv(path_or_buf='data/all_vintage_cards-{}_recent.csv'.format(rarity))
 
 def avg_price_by_season(seasons, tablename):
     c=1000000
