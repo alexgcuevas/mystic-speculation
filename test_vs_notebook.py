@@ -179,7 +179,7 @@ rarities = ['mythic','rare', 'uncommon', 'common']
 standard_price_sums=pd.Series(0, index=std_seasons.columns)
 color_dict = {'mythic':'r', 'rare':'goldenrod', 'uncommon':'silver', 'common':'k'}
 dates_df = pd.read_csv('data/season_dates.csv')
-dates = pd.to_datetime(dates['end_date'].values)
+dates = pd.to_datetime(dates_df['end_date'].values)
 fig, ax1 = plt.subplots()
 
 for rarity in rarities:
@@ -191,10 +191,21 @@ for rarity in rarities:
     standard_price_sums = standard_price_sums+sums
     ax1.plot(dates, sums.values, label=rarity, color=color_dict[rarity])
 
+months = MonthLocator(range(1, 13), bymonthday=1, interval=3)
+monthsFmt = DateFormatter("%b '%y")
+
 ax1.plot(dates, standard_price_sums.values, label='total', color='purple')
-ax1.set_xticks(rotation='vertical')
+ax1.tick_params(axis='x', rotation=45)
+ax1.xaxis.set_major_locator(months)
+ax1.xaxis.set_major_formatter(monthsFmt)
+ax1.xaxis.set_minor_locator(months)
+ax1.grid(True)
 ax2 = ax1.twinx()
-ax2.plot(dates, std_seasons.sum())
-ax2.set_yticks(int(np.arange(0,11,1)))
+ax2.plot(dates, std_seasons.sum(), color='g')
+ax2.set_yticks(np.arange(0,11,1))
+dates
+std_seasons
+ax1.set_xticks(dates)
+ax2.set_xticks(dates)
 ax1.legend()
 plt.show()
