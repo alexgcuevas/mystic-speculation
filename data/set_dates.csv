@@ -143,56 +143,37 @@ begin_date,end_date,season,sets
 4/28/2017,6/18/2017,23,Battle For Zendikar
 4/28/2017,6/18/2017,23,Amonkhet
 4/28/2017,6/18/2017,23,Aether Revolt
-6/19/2017,7/13/2017,24,Shadows Over Innistrad
-6/19/2017,7/13/2017,24,Oath of the Gatewatch
-6/19/2017,7/13/2017,24,Kaladesh
-6/19/2017,7/13/2017,24,Eldritch Moon
-6/19/2017,7/13/2017,24,Battle For Zendikar
-6/19/2017,7/13/2017,24,Amonkhet
-6/19/2017,7/13/2017,24,Aether Revolt
-7/14/2017,9/28/2017,25,Shadows Over Innistrad
-7/14/2017,9/28/2017,25,Oath of the Gatewatch
-7/14/2017,9/28/2017,25,Kaladesh
-7/14/2017,9/28/2017,25,Hour of Devastation
-7/14/2017,9/28/2017,25,Eldritch Moon
-7/14/2017,9/28/2017,25,Battle For Zendikar
-7/14/2017,9/28/2017,25,Amonkhet
-7/14/2017,9/28/2017,25,Aether Revolt
-9/29/2017,1/18/2018,26,Kaladesh
-9/29/2017,1/18/2018,26,Ixalan
-9/29/2017,1/18/2018,26,Hour of Devastation
-9/29/2017,1/18/2018,26,Amonkhet
-9/29/2017,1/18/2018,26,Aether Revolt
-1/19/2018,4/26/2018,27,Rivals of Ixalan
-1/19/2018,4/26/2018,27,Kaladesh
-1/19/2018,4/26/2018,27,Ixalan
-1/19/2018,4/26/2018,27,Hour of Devastation
-1/19/2018,4/26/2018,27,Amonkhet
-1/19/2018,4/26/2018,27,Aether Revolt
-4/27/2018,6/21/2018,28,Rivals of Ixalan
-4/27/2018,6/21/2018,28,Kaladesh
-4/27/2018,6/21/2018,28,Ixalan
-4/27/2018,6/21/2018,28,Hour of Devastation
-4/27/2018,6/21/2018,28,Dominaria
-4/27/2018,6/21/2018,28,Amonkhet
-4/27/2018,6/21/2018,28,Aether Revolt
-6/22/2018,7/13/2018,29,Rivals of Ixalan
-6/22/2018,7/13/2018,29,Kaladesh
-6/22/2018,7/13/2018,29,Ixalan
-6/22/2018,7/13/2018,29,Hour of Devastation
-6/22/2018,7/13/2018,29,Dominaria
-6/22/2018,7/13/2018,29,Amonkhet
-6/22/2018,7/13/2018,29,Aether Revolt
-7/13/2018,10/5/2018,30,Rivals of Ixalan
-7/13/2018,10/5/2018,30,Kaladesh
-7/13/2018,10/5/2018,30,Ixalan
-7/13/2018,10/5/2018,30,Hour of Devastation
-7/13/2018,10/5/2018,30,Dominaria
-7/13/2018,10/5/2018,30,Core Set 2019
-7/13/2018,10/5/2018,30,Amonkhet
-7/13/2018,10/5/2018,30,Aether Revolt
-10/5/2018,11/16/2018,31,Rivals of Ixalan
-10/5/2018,11/16/2018,31,Ixalan
-10/5/2018,11/16/2018,31,Guilds of Ravnica
-10/5/2018,11/16/2018,31,Dominaria
-10/5/2018,11/16/2018,31,Core Set 2019
+7/14/2017,9/28/2017,24,Shadows Over Innistrad
+7/14/2017,9/28/2017,24,Oath of the Gatewatch
+7/14/2017,9/28/2017,24,Kaladesh
+7/14/2017,9/28/2017,24,Hour of Devastation
+7/14/2017,9/28/2017,24,Eldritch Moon
+7/14/2017,9/28/2017,24,Battle For Zendikar
+7/14/2017,9/28/2017,24,Amonkhet
+7/14/2017,9/28/2017,24,Aether Revolt
+9/29/2017,1/18/2018,25,Kaladesh
+9/29/2017,1/18/2018,25,Ixalan
+9/29/2017,1/18/2018,25,Hour of Devastation
+9/29/2017,1/18/2018,25,Amonkhet
+9/29/2017,1/18/2018,25,Aether Revolt
+1/19/2018,4/26/2018,26,Rivals of Ixalan
+1/19/2018,4/26/2018,26,Kaladesh
+1/19/2018,4/26/2018,26,Ixalan
+1/19/2018,4/26/2018,26,Hour of Devastation
+1/19/2018,4/26/2018,26,Amonkhet
+1/19/2018,4/26/2018,26,Aether Revolt
+4/27/2018,6/21/2018,27,Rivals of Ixalan
+4/27/2018,6/21/2018,27,Kaladesh
+4/27/2018,6/21/2018,27,Ixalan
+4/27/2018,6/21/2018,27,Hour of Devastation
+4/27/2018,6/21/2018,27,Dominaria
+4/27/2018,6/21/2018,27,Amonkhet
+4/27/2018,6/21/2018,27,Aether Revolt
+7/13/2018,10/5/2018,28,Rivals of Ixalan
+7/13/2018,10/5/2018,28,Kaladesh
+7/13/2018,10/5/2018,28,Ixalan
+7/13/2018,10/5/2018,28,Hour of Devastation
+7/13/2018,10/5/2018,28,Dominaria
+7/13/2018,10/5/2018,28,Core Set 2019
+7/13/2018,10/5/2018,28,Amonkhet
+7/13/2018,10/5/2018,28,Aether Revolt
