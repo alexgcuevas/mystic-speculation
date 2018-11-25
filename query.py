@@ -59,19 +59,12 @@ def get_price_history(rarity, version=2):
     tablename = rarity+'_price_history_'+str(version)
     connection = connect_mystic()
 
-    query = ("select ph.cardname, ph.setname, ph.timestamp, ph.price "
-            "from {0} ph, "
-            "     (select ph2.cardname, ph2.setname, max(timestamp) as lastdate "
-            "      from {0} ph2 "
-            "      group by ph2.cardname, ph2.setname) mr "
-            "where ph.timestamp = mr.lastdate "
-            "and ph.cardname = mr.cardname "
-            "and ph.setname = mr.setname ").format(tablename)
+    query = ("select * from {} ").format(tablename)
 
     # Do the thing
-    recent_df = pd.read_sql(query, connection)
+    price_history_df = pd.read_sql(query, connection)
     connection.close()
-    return recent_df
+    return price_history_df
 
 def write_recent_prices(cards_df, rarities):
     for rarity in rarities:
@@ -81,7 +74,8 @@ def write_recent_prices(cards_df, rarities):
         todo_df.to_csv(path_or_buf='data/all_vintage_cards-{}_recent.csv'.format(rarity))
 
 def avg_price_by_season(seasons, tablename):
-    c=1000000000
+    c=1000000
+    print(c)
     connection = connect_mystic()
     seasons_df = pd.DataFrame(columns=['cardname','setname'])
     for season in seasons:
@@ -90,7 +84,25 @@ def avg_price_by_season(seasons, tablename):
         end = str(int(pd.Timestamp(season[1]).value/c))
         query = ("select cardname, setname, avg(price) as s{3} "
                  "from {0} "
-                 "where cast(timestamp as float)/1000 > {1} and cast(timestamp as float)/1000 < {2} "
+                 "where cast(timestamp as float) > {1} and cast(timestamp as float) < {2} "
+                 "group by cardname, setname ").format(tablename,start,end,season[2])
+        season_df = pd.read_sql(query, connection)
+        seasons_df = seasons_df.merge(season_df, on=['cardname','setname'], how='outer')
+    connection.close()
+    return seasons_df
+
+def w_avg_price_by_season(seasons, tablename):
+    c=1000000
+    print(c)
+    connection = connect_mystic()
+    seasons_df = pd.DataFrame(columns=['cardname','setname'])
+    for season in seasons:
+        # to timestamp
+        start = str(int(pd.Timestamp(season[0]).value/c))
+        end = str(int(pd.Timestamp(season[1]).value/c))
+        query = ("select cardname, setname, avg(price) as s{3} "
+                 "from {0} "
+                 "where cast(timestamp as float) > {1} and cast(timestamp as float) < {2} "
                  "group by cardname, setname ").format(tablename,start,end,season[2])
         season_df = pd.read_sql(query, connection)
         seasons_df = seasons_df.merge(season_df, on=['cardname','setname'], how='outer')

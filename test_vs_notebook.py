@@ -13,22 +13,19 @@ from sqlalchemy import create_engine
 import psycopg2
 # Import my own stuff
 from scrape.scraper import *
+from query import *
 
 
 """ Testing plotting over time """
 connection = connect_mystic()
 
 # Plots Mythic history
-def plot_price_history(rarity):
-    tablename = rarity+'_price_history_2'
-    query = ("select * from {} ").format(tablename)
-    history_df = pd.read_sql(query, connection)
+def plot_price_history(rarity, version=2):
+    history_df = get_price_history(rarity, version)
     def time_bomb(row):
         date = pd.Timestamp.utcfromtimestamp(int(row['timestamp'])/1000)
         row['year'] = date.year
         row['month'] = date.month
-        # row['day'] = date.day
-        # row['weekday'] = date.dayofweek
         row['date'] = date
         return row
     history_df = history_df.apply(time_bomb, axis=1)
@@ -61,35 +58,95 @@ seasons_df.head()
 dates_df.head()
 
 """
-card set timestamp price 
+Load average price by season
 """
-
-def avg_price_by_season(seasons, tablename):
-    connection = connect_mystic()
-    seasons_df = pd.DataFrame(columns=['cardname','setname'])
-    for season in seasons:
-        print(season)
-        # to timestamp
-        start = str(int(pd.Timestamp(season[0]).value/c))
-        end = str(int(pd.Timestamp(season[1]).value/c))
-        query = ("select cardname, setname, avg(price) as s{3}_avg "
-                 "from {0} "
-                 "where cast(timestamp as float)/1000 > {1} and cast(timestamp as float)/1000 < {2} "
-                 "group by cardname, setname ").format(tablename,start,end,season[2])
-        season_df = pd.read_sql(query, connection)
-        print(season_df.head(1))
-        seasons_df = seasons_df.merge(season_df, on=['cardname','setname'], how='outer')
-        print("seasons shape: {}".format(seasons_df.shape))
-    connection.close()
-    return seasons_df
-
-rarity = 'mythic'
+connection = connect_mystic()
+rarity = 'rare'
 tablename = rarity+"_price_history_2"
 seasons = np.array(pd.read_csv("data/season_dates.csv"))
-mythics_by_season = avg_price_by_season(seasons, tablename)
-mythics_by_season.head()
-
+season_prices = avg_price_by_season(seasons, tablename)
+season_prices.drop(columns=['cardname','setname'], inplace=True)
+plt.plot(season_prices.sum())
+plt.show()
     #Upgrade avg to time-weighted average after MVP working
     #try median?
+connection.close()
+season_prices['s29']
+seasons
+
+"""
+Load time-weighted average price by season
+"""
 
 
+rarity = 'rare'
+tablename = rarity+"_price_history_2"
+seasons = np.array(pd.read_csv("data/season_dates.csv"))
+
+c=1000000000
+connection = connect_mystic()
+seasons_df = pd.DataFrame(columns=['cardname','setname'])
+for season in seasons:
+    # to timestamp
+    start = str(int(pd.Timestamp(season[0]).value/c))
+    end = str(int(pd.Timestamp(season[1]).value/c))
+
+    # add season bookends to price history, calculate leads and diffs
+    query = ("with add_season_bookends as "
+             "(select ph.cardname, ph.setname, {START} as timestamp, ph.price "
+             "from {TABLENAME} ph, "
+             "     (select ph2.cardname, ph2.setname, max(ph2.timestamp) as lastdate "
+             "      from {TABLENAME} ph2 "
+             "      where ph2.timestamp < {START} "
+             "      group by ph2.cardname, ph2.setname) ss "
+             "where ph.timestamp = ss.lastdate "
+             "and ph.cardname = ss.cardname "
+             "and ph.setname = ss.setname "
+             "union "
+             "select ph.cardname, ph.setname, {END} as timestamp, ph.price "
+             "from {TABLENAME} ph, "
+             "     (select ph2.cardname, ph2.setname, max(ph2.timestamp) as lastdate "
+             "      from {TABLENAME} ph2 "
+             "      where ph2.timestamp < {END} "
+             "      group by ph2.cardname, ph2.setname) ss "
+             "where ph.timestamp = ss.lastdate "
+             "and ph.cardname = ss.cardname "
+             "and ph.setname = ss.setname "
+             "union "
+             "select * from {TABLENAME} "
+             "where cast(timestamp as float)/1000 >= {START} "
+             "  and cast(timestamp as float)/1000 <= {END}) "
+             " "
+             ",timeleads as "
+             "(select *, lead(timestamp) over (order by timestamp) timelead "
+             "from add_season_bookends) "
+             " "
+             ",diffs as "
+             "(select *, datediff(day, timestamp, timelead) as daydiff "
+             "from timeleads) "
+             " "
+             "select cardname, setname, sum(daydiff*price)/sum(day_diff) as s{SEASON}"
+             " from diffs").format(START=start, END=end, TABLENAME=tablename, SEASON=season[2])
+    season_df = pd.read_sql(query, connection)
+    seasons_df = seasons_df.merge(season_df, on=['cardname','setname'], how='outer')
+connection.close()
+seasons_df.drop(columns=['cardname','setname'], inplace=True)
+plt.plot(seasons_df.sum())
+plt.show()
+
+
+    # get timeleads
+
+    # calculate diff
+
+    # calculate weighted average
+
+
+    query = ("select cardname, setname, avg(price) as s{3} "
+                "from {0} "
+                "where cast(timestamp as float)/1000 > {1} and cast(timestamp as float)/1000 < {2} "
+                "group by cardname, setname ").format(tablename,start,end,season[2])
+    season_df = pd.read_sql(query, connection)
+    seasons_df = seasons_df.merge(season_df, on=['cardname','setname'], how='outer')
+connection.close()
+return seasons_df
