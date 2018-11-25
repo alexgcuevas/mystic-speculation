@@ -78,12 +78,11 @@ seasons
 Load time-weighted average price by season
 """
 
-
 rarity = 'rare'
 tablename = rarity+"_price_history_2"
 seasons = np.array(pd.read_csv("data/season_dates.csv"))
 
-c=1000000000
+c=1000000
 connection = connect_mystic()
 seasons_df = pd.DataFrame(columns=['cardname','setname'])
 for season in seasons:
@@ -93,29 +92,30 @@ for season in seasons:
 
     # add season bookends to price history, calculate leads and diffs
     query = ("with add_season_bookends as "
-             "(select ph.cardname, ph.setname, {START} as timestamp, ph.price "
+             "(select ph.cardname, ph.setname, '{START}' as timestamp, ph.price "
              "from {TABLENAME} ph, "
              "     (select ph2.cardname, ph2.setname, max(ph2.timestamp) as lastdate "
              "      from {TABLENAME} ph2 "
-             "      where ph2.timestamp < {START} "
+             "      where cast(ph2.timestamp as float) < {START} "
              "      group by ph2.cardname, ph2.setname) ss "
              "where ph.timestamp = ss.lastdate "
-             "and ph.cardname = ss.cardname "
-             "and ph.setname = ss.setname "
+             "  and ph.cardname = ss.cardname "
+             "  and ph.setname = ss.setname "
              "union "
-             "select ph.cardname, ph.setname, {END} as timestamp, ph.price "
+             "select ph.cardname, ph.setname, '{END}' as timestamp, ph.price "
              "from {TABLENAME} ph, "
              "     (select ph2.cardname, ph2.setname, max(ph2.timestamp) as lastdate "
              "      from {TABLENAME} ph2 "
-             "      where ph2.timestamp < {END} "
+             "      where cast(ph2.timestamp as float) < {END} "
              "      group by ph2.cardname, ph2.setname) ss "
              "where ph.timestamp = ss.lastdate "
-             "and ph.cardname = ss.cardname "
-             "and ph.setname = ss.setname "
+             "  and ph.cardname = ss.cardname "
+             "  and ph.setname = ss.setname "
              "union "
-             "select * from {TABLENAME} "
-             "where cast(timestamp as float)/1000 >= {START} "
-             "  and cast(timestamp as float)/1000 <= {END}) "
+             "select cardname, setname, timestamp, price "
+             "from {TABLENAME} "
+             "where cast(timestamp as float) >= {START} "
+             "  and cast(timestamp as float) <= {END}) "
              " "
              ",timeleads as "
              "(select *, lead(timestamp) over (order by timestamp) timelead "
@@ -129,10 +129,11 @@ for season in seasons:
              " from diffs").format(START=start, END=end, TABLENAME=tablename, SEASON=season[2])
     season_df = pd.read_sql(query, connection)
     seasons_df = seasons_df.merge(season_df, on=['cardname','setname'], how='outer')
-connection.close()
+
 seasons_df.drop(columns=['cardname','setname'], inplace=True)
 plt.plot(seasons_df.sum())
 plt.show()
+connection.close()
 
 
     # get timeleads
