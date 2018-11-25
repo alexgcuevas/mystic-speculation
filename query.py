@@ -155,6 +155,7 @@ def plot_standard_trends():
 
     rarities = ['mythic','rare', 'uncommon', 'common']
     standard_price_sums=pd.Series(0, index=std_seasons.columns)
+    color_dict = {'mythic':'r', 'rare':'goldenrod', 'uncommon':'silver', 'common':'k'}
 
     for rarity in rarities:
         seasonal_prices = pd.read_csv('data/all_vintage_cards-{}_seasonal_avg.csv'.format(rarity))
@@ -163,13 +164,11 @@ def plot_standard_trends():
         standard_prices = seasonal_prices.apply(seasonal_mask, axis=1)
         sums = standard_prices.drop(columns=['cardname','setname']).sum()
         standard_price_sums = standard_price_sums+sums
-        plt.plot(sums, label=rarity)
+        plt.plot(sums, label=rarity, color=color_dict[rarity])
 
-    plt.plot(standard_price_sums, label='total')
+    plt.plot(standard_price_sums, label='total', color='purple')
     plt.legend()
     plt.show()
-
-
 
 def connect_mystic():
     '''

@@ -176,16 +176,25 @@ def seasonal_mask(row):
     return row
 
 rarities = ['mythic','rare', 'uncommon', 'common']
-standard_price_sums=pd.DataFrame(columns=std_seasons.columns)
+standard_price_sums=pd.Series(0, index=std_seasons.columns)
+color_dict = {'mythic':'r', 'rare':'goldenrod', 'uncommon':'silver', 'common':'k'}
+dates_df = pd.read_csv('data/season_dates.csv')
+dates = pd.to_datetime(dates['end_date'].values)
+fig, ax1 = plt.subplots()
 
 for rarity in rarities:
     seasonal_prices = pd.read_csv('data/all_vintage_cards-{}_seasonal_avg.csv'.format(rarity))
     seasonal_prices.drop(columns='Unnamed: 0',inplace=True)
     seasons = set(seasonal_prices.columns) and set(std_seasons.columns)
     standard_prices = seasonal_prices.apply(seasonal_mask, axis=1)
-    sum = standard_prices.drop(columns=['cardname','setname']).sum()
-    plt.plot(standard_prices.drop(columns=['cardname','setname']).sum(), label=rarity)
+    sums = standard_prices.drop(columns=['cardname','setname']).sum()
+    standard_price_sums = standard_price_sums+sums
+    ax1.plot(dates, sums.values, label=rarity, color=color_dict[rarity])
 
-plt.plot(standard_price_sums, label='total')
+ax1.plot(dates, standard_price_sums.values, label='total', color='purple')
+ax1.set_xticks(rotation='vertical')
+ax2 = ax1.twinx()
+ax2.plot(dates, std_seasons.sum())
+ax2.set_yticks(np.arange(0,11,1))
 plt.legend()
 plt.show()
