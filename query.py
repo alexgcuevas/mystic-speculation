@@ -67,6 +67,7 @@ def get_price_history(rarity, version=2):
     return price_history_df
 
 def write_recent_prices(cards_df, rarities):
+    # UNTESTED
     for rarity in rarities:
         print('writing {} prices to csv'.format(rarity))
         filled_df = get_recent_prices(rarity)
@@ -93,20 +94,54 @@ def avg_price_by_season(seasons, tablename):
 
 def w_avg_price_by_season(seasons, tablename):
     c=1000000
-    print(c)
     connection = connect_mystic()
     seasons_df = pd.DataFrame(columns=['cardname','setname'])
     for season in seasons:
         # to timestamp
         start = str(int(pd.Timestamp(season[0]).value/c))
         end = str(int(pd.Timestamp(season[1]).value/c))
-        query = ("select cardname, setname, avg(price) as s{3} "
-                 "from {0} "
-                 "where cast(timestamp as float) > {1} and cast(timestamp as float) < {2} "
-                 "group by cardname, setname ").format(tablename,start,end,season[2])
+
+        # add season bookends to price history, calculate leads and diffs
+        query = ("with add_season_bookends as "
+                "(select ph.cardname, ph.setname, '{START}' as timestamp, ph.price "
+                "from {TABLENAME} ph, "
+                "     (select ph2.cardname, ph2.setname, max(ph2.timestamp) as lastdate "
+                "      from {TABLENAME} ph2 "
+                "      where cast(ph2.timestamp as float) < {START} "
+                "      group by ph2.cardname, ph2.setname) ss "
+                "where ph.timestamp = ss.lastdate "
+                "  and ph.cardname = ss.cardname "
+                "  and ph.setname = ss.setname "
+                "union "
+                "select ph.cardname, ph.setname, '{END}' as timestamp, ph.price "
+                "from {TABLENAME} ph, "
+                "     (select ph2.cardname, ph2.setname, max(ph2.timestamp) as lastdate "
+                "      from {TABLENAME} ph2 "
+                "      where cast(ph2.timestamp as float) < {END} "
+                "      group by ph2.cardname, ph2.setname) ss "
+                "where ph.timestamp = ss.lastdate "
+                "  and ph.cardname = ss.cardname "
+                "  and ph.setname = ss.setname "
+                "union "
+                "select cardname, setname, timestamp, price "
+                "from {TABLENAME} "
+                "where cast(timestamp as float) >= {START} "
+                "  and cast(timestamp as float) <= {END}) "
+                " "
+                ",timeleads as "
+                "(select *, lead(timestamp) over (partition by cardname, setname order by timestamp) timelead "
+                "from add_season_bookends) "
+                " "
+                ",diffs as "
+                "(select *, date_part('day', to_timestamp(cast(timelead as float)) - to_timestamp(cast(timestamp as float))) as daydiff "
+                "from timeleads) "
+                " "
+                "select cardname, setname, sum(daydiff*price)/sum(daydiff) as s{SEASON} "
+                "from diffs "
+                "group by cardname, setname ").format(START=start, END=end, TABLENAME=tablename, SEASON=season[2])
         season_df = pd.read_sql(query, connection)
         seasons_df = seasons_df.merge(season_df, on=['cardname','setname'], how='outer')
-    connection.close()
+
     return seasons_df
 
 def connect_mystic():
@@ -134,4 +169,10 @@ def connect_mystic():
 if __name__ == "__main__":
     cards_df = pd.read_csv('data/all_vintage_cards.csv')
     rarities = ['mythic','rare', 'uncommon', 'common']
-    write_recent_prices(cards_df, rarities)
+    seasons = np.array(pd.read_csv("data/season_dates.csv"))
+    for rarity in rarities:
+        tablename = rarity+"_price_history_2"
+        print("Starting seasonal w-avg price query for {} cards".format(rarity))
+        seasonal_price_history = w_avg_price_by_season(seasons, tablename)
+        print("Writing seasonal {} prices to csv".format(rarity))
+        seasonal_price_history.to_csv(path_or_buf='data/all_vintage_cards-{}_seasonal_avg.csv'.format(rarity))
