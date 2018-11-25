@@ -144,6 +144,33 @@ def w_avg_price_by_season(seasons, tablename):
 
     return seasons_df
 
+def plot_standard_trends():
+    std_seasons = pd.read_csv('data/standard_seasonality.csv')
+    std_seasons.set_index('setname', inplace=True)
+
+    def seasonal_mask(row):
+        for season in seasons:
+            row[season] = row[season]*std_seasons.loc[row['setname']][season]
+        return row
+
+    rarities = ['mythic','rare', 'uncommon', 'common']
+    standard_price_sums=pd.Series(0, index=std_seasons.columns)
+
+    for rarity in rarities:
+        seasonal_prices = pd.read_csv('data/all_vintage_cards-{}_seasonal_avg.csv'.format(rarity))
+        seasonal_prices.drop(columns='Unnamed: 0',inplace=True)
+        seasons = set(seasonal_prices.columns) and set(std_seasons.columns)
+        standard_prices = seasonal_prices.apply(seasonal_mask, axis=1)
+        sums = standard_prices.drop(columns=['cardname','setname']).sum()
+        standard_price_sums = standard_price_sums+sums
+        plt.plot(sums, label=rarity)
+
+    plt.plot(standard_price_sums, label='total')
+    plt.legend()
+    plt.show()
+
+
+
 def connect_mystic():
     '''
     Connects to mystic-speculation database, returns connection object

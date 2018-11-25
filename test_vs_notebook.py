@@ -176,12 +176,16 @@ def seasonal_mask(row):
     return row
 
 rarities = ['mythic','rare', 'uncommon', 'common']
+standard_price_sums=pd.DataFrame(columns=std_seasons.columns)
+
 for rarity in rarities:
     seasonal_prices = pd.read_csv('data/all_vintage_cards-{}_seasonal_avg.csv'.format(rarity))
     seasonal_prices.drop(columns='Unnamed: 0',inplace=True)
     seasons = set(seasonal_prices.columns) and set(std_seasons.columns)
-    standard_prices = seasonal_prices.apply(seasonal_mask, axis=1) 
+    standard_prices = seasonal_prices.apply(seasonal_mask, axis=1)
+    sum = standard_prices.drop(columns=['cardname','setname']).sum()
     plt.plot(standard_prices.drop(columns=['cardname','setname']).sum(), label=rarity)
 
+plt.plot(standard_price_sums, label='total')
 plt.legend()
 plt.show()
