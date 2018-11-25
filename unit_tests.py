@@ -1,5 +1,6 @@
 from model.master_transmuter import *
 from scrape.scraper import *
+from query import *
 
 def scraping_progress(rarities):
     connection = connect_mystic()
@@ -42,14 +43,20 @@ def query_rarity_dfs(rarity='mythic', version=2, rows=10):
             "and ph.setname = mr.setname ").format(tablename)
 
     # Do the thing
-    results = connection.execute(query)
     recent_df = pd.read_sql(query, connection)
     connection.close()
     return recent_df.sample(rows)
 
+def chandra_price_check():
+    cardname = 'Chandra, Torch of Defiance'
+    setname = 'Kaladesh'
+    seasons = np.array(pd.read_csv("data/season_dates.csv"))
+    tablename = "mythic_price_history_2"
+    df = get_twavg_card(cardname, setname, seasons, tablename)
+    print(df)
+
 if __name__ == "__main__":
     # run tessssts
-    recent_df = query_rarity_dfs('rare')
-    print(recent_df)
+    chandra_price_check()
 
 
