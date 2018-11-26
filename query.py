@@ -266,32 +266,33 @@ def plot_standard_market_size(rarities = ['mythic','rare', 'uncommon', 'common']
     ax2.legend()
     plt.show()
 
-# IN PROGRESS 
 def plot_all_standard_cards(rarities = ['mythic','rare', 'uncommon', 'common'],
-                   alpha_dict = {'mythic':.1, 'rare':0.01, 'uncommon':0.001, 'common':0.001},
-                   color_dict = {'mythic':'r', 'rare':'goldenrod', 'uncommon':'silver', 'common':'k'}):
+                            alpha_dict = {'mythic':.15, 'rare':0.05, 'uncommon':0.02, 'common':0.015},
+                            color_dict = {'mythic':'r', 'rare':'goldenrod', 'uncommon':'grey', 'common':'cyan'},
+                            log_price=True):
     # Define the standard format
     std_sets, std_dates = get_standard_format()
     
     # Plot setup
-    standard_total=pd.Series(0, index=std_sets.columns)
     fig, ax1 = plt.subplots()
     ax1.set_xticks(std_dates)
-    ax2 = ax1.twinx()
 
+    # Plot every card in standard
     for rarity in rarities:
         print("Plotting all {} cards price history".format(rarity))
-        seasonal_prices = pd.read_csv('data/clean_cards-{}_seasonal_avg.csv'.format(rarity))
-        seasonal_prices.drop(columns=['cardname','setname','Unnamed: 0'],inplace=True)
-        for index, card in seasonal_prices.iterrows():
-            ax1.plot(dates, card, color=color_dict[rarity], label='_nolegend_', alpha=alpha_dict[rarity])
-        
+        standard_prices = get_standard_prices(rarity, std_sets)
+        standard_prices.drop(columns=['cardname','setname'],inplace=True)
+        for index, card in standard_prices.iterrows():
+            ax1.plot(std_dates, card, color=color_dict[rarity], label='_nolegend_', alpha=alpha_dict[rarity])
         print("Plotting {} average price history".format(rarity))
         my_effects = [pe.Stroke(linewidth=2.5, foreground='k'), pe.Normal()]
         my_label = "avg "+rarity+ " $"
-        ax1.plot(dates, seasonal_prices.mean(), label=my_label, path_effects=my_effects, color=color_dict[rarity])
+        ax1.plot(std_dates, standard_prices.mean(), label=my_label, path_effects=my_effects, color=color_dict[rarity])
 
-    ax1.set_xticks(dates)
+    if log_price:
+        ax1.set_yscale("log", nonposy='clip')
+
+    month_formatter(ax1)
     ax1.grid(True)
     ax1.legend()
     plt.show()    
@@ -300,37 +301,28 @@ def plot_all_cards(rarities = ['mythic','rare', 'uncommon', 'common'],
                    alpha_dict = {'mythic':.15, 'rare':0.05, 'uncommon':0.02, 'common':0.015},
                    color_dict = {'mythic':'r', 'rare':'goldenrod', 'uncommon':'grey', 'common':'cyan'},
                    log_price=True):
-
+  
+    # Get dates; generalize to work for any format; need seasonal averages not by format?
     dates_df = pd.read_csv('data/season_dates.csv')
     dates = pd.to_datetime(dates_df['end_date'].values)
-    
-    months = MonthLocator(range(1, 13), bymonthday=1, interval=3)
-    monthsFmt = DateFormatter("%b '%y")
-    
-    fig, ax1 = plt.subplots()
-    
-    ax1.tick_params(axis='x', rotation=90)
-    ax1.xaxis.set_major_locator(months)
-    ax1.xaxis.set_major_formatter(monthsFmt)
-    ax1.xaxis.set_minor_locator(months)
 
+    # Plot 
+    fig, ax1 = plt.subplots()
     for rarity in rarities:
         print("Plotting all {} cards price history".format(rarity))
         seasonal_prices = pd.read_csv('data/clean_cards-{}_seasonal_avg.csv'.format(rarity))
         seasonal_prices.drop(columns=['cardname','setname','Unnamed: 0'],inplace=True)
         for index, card in seasonal_prices.iterrows():
             ax1.plot(dates, card, color=color_dict[rarity], label='_nolegend_', alpha=alpha_dict[rarity])
-        
         print("Plotting {} average price history".format(rarity))
         my_effects = [pe.Stroke(linewidth=2.5, foreground='k'), pe.Normal()]
         my_label = "avg "+rarity+ " $"
         ax1.plot(dates, seasonal_prices.mean(), label=my_label, path_effects=my_effects, color=color_dict[rarity])
 
+    # Format plot
     if log_price:
         ax1.set_yscale("log", nonposy='clip')
-
-    ax1.set_xticks(dates)
-    ax1.grid(True)
+    month_formatter([ax1])
     ax1.legend()
     plt.show()    
 
