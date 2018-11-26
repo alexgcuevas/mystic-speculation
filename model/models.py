@@ -214,9 +214,12 @@ def run_models_against_baseline(models, cards_df, scorer, n_folds=5):
     base_scores = cross_val_score(baseline, X, y, cv=n_folds, verbose=2, scoring=scorer, n_jobs=-1)
 
     for model, modelname in models:
-        my_scores = cross_val_score(model, X, y, cv=n_folds, verbose=2, scoring=scorer, n_jobs=-1)
-        score_dict[modelname] = my_scores
-
+        try:
+            my_scores = cross_val_score(model, X, y, cv=n_folds, verbose=2, scoring=scorer, n_jobs=-1)
+            score_dict[modelname] = my_scores
+        except:
+            print("{} errored during cross_val".format(modelname))
+            score_dict[modelname] = ['Errored during cross_val']
     print("baseline scores: \n\t{}".format(base_scores))
     print("baseline average: \n\t{}".format(np.mean(base_scores)))
 
