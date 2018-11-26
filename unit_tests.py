@@ -57,6 +57,7 @@ def chandra_price_check():
 
 if __name__ == "__main__":
     # run tessssts
-    chandra_price_check()
-
+    plot_standard_market_size()
+    plot_all_cards()
+    plot_all_standard_cards()
 

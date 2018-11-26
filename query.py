@@ -220,9 +220,9 @@ def get_standard_prices(rarity, std_sets):
     return seasonal_prices.apply(standard_mask, axis=1)
 
 def month_formatter(axs):
+    months = MonthLocator(range(1, 13), bymonthday=1, interval=3)
+    monthsFmt = DateFormatter("%b '%y")
     for ax in axs:
-        months = MonthLocator(range(1, 13), bymonthday=1, interval=3)
-        monthsFmt = DateFormatter("%b '%y")
         ax.tick_params(axis='x', rotation=90)
         ax.xaxis.set_major_locator(months)
         ax.xaxis.set_major_formatter(monthsFmt)
@@ -252,11 +252,11 @@ def plot_standard_market_size(rarities = ['mythic','rare', 'uncommon', 'common']
         standard_prices = get_standard_prices(rarity, std_sets)
         rarity_sum = standard_prices.drop(columns=['cardname','setname']).sum()
         print("Plotting standard price trend for {}s".format(rarity))
-        ax1.plot_date(std_dates, rarity_sum, '-', label=rarity, color=color_dict[rarity])
+        ax1.plot(std_dates, rarity_sum, label=rarity, color=color_dict[rarity])
         standard_total = standard_total+rarity_sum
     print("Plotting total standard prices and set counts")   
-    ax1.plot_date(std_dates, standard_total, '-', label='total', color='purple')
-    ax2.plot_date(std_dates, std_sets.sum(), '-', color='g', label='# legal sets')
+    ax1.plot(std_dates, standard_total, label='total', color='purple')
+    ax2.plot(std_dates, std_sets.sum(), color='g', label='# legal sets')
 
     # Format plot
     month_formatter([ax1,ax2])
@@ -267,7 +267,7 @@ def plot_standard_market_size(rarities = ['mythic','rare', 'uncommon', 'common']
     plt.show()
 
 def plot_all_standard_cards(rarities = ['mythic','rare', 'uncommon', 'common'],
-                            alpha_dict = {'mythic':.15, 'rare':0.05, 'uncommon':0.02, 'common':0.015},
+                            alpha_dict = {'mythic':.1, 'rare':.1, 'uncommon':0.05, 'common':0.05},
                             color_dict = {'mythic':'r', 'rare':'goldenrod', 'uncommon':'grey', 'common':'cyan'},
                             log_price=True):
     # Define the standard format
@@ -283,16 +283,16 @@ def plot_all_standard_cards(rarities = ['mythic','rare', 'uncommon', 'common'],
         standard_prices = get_standard_prices(rarity, std_sets)
         standard_prices.drop(columns=['cardname','setname'],inplace=True)
         for index, card in standard_prices.iterrows():
-            ax1.plot(std_dates, card, color=color_dict[rarity], label='_nolegend_', alpha=alpha_dict[rarity])
+            ax1.plot_date(std_dates, card, '-', color=color_dict[rarity], label='_nolegend_', alpha=alpha_dict[rarity])
         print("Plotting {} average price history".format(rarity))
         my_effects = [pe.Stroke(linewidth=2.5, foreground='k'), pe.Normal()]
         my_label = "avg "+rarity+ " $"
-        ax1.plot(std_dates, standard_prices.mean(), label=my_label, path_effects=my_effects, color=color_dict[rarity])
+        ax1.plot_date(std_dates, standard_prices.mean(), '-', label=my_label, path_effects=my_effects, color=color_dict[rarity])
 
     if log_price:
         ax1.set_yscale("log", nonposy='clip')
 
-    month_formatter(ax1)
+    month_formatter([ax1])
     ax1.grid(True)
     ax1.legend()
     plt.show()    

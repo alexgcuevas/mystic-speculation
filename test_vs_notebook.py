@@ -161,4 +161,5 @@ plot_all_cards(rarities)
 
 plot_standard_market_size()
 plot_all_cards()
+plot_all_standard_cards()
 """ 
