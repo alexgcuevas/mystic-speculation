@@ -314,9 +314,10 @@ class BaselineModel(BaseEstimator, RegressorMixin):
             test_mask = X['rarity']==rarity
             if rarity in self.rarity_averages_.keys():
                 y_pred[test_mask] = self.rarity_averages_[rarity]
+            elif rarity == 'mythic':
+                y_pred[test_mask] = self.rarity_averages_['rare']
             else:
-                y_pred[test_mask] = self.rarity_averages_.values().next()
-        
+                y_pred[test_mask] = self.rarity_averages_['uncommon']
         return y_pred
 
     def score(self, X, y):
@@ -400,9 +401,11 @@ class SpotPriceByRarityGBR(BaseEstimator, RegressorMixin):
             
             if (rarity in self.train_rarities_) and (rarity in self.rarity_models_.keys()):    
                 y_pred[test_mask] = self.rarity_models_[rarity].predict(X[test_mask])
+            elif rarity == 'rarity_mythic':
+                y_pred[test_mask] = self.rarity_models_['rarity_rare'].predict(X[test_mask])
             else:
-                y_pred[test_mask] = self.rarity_models_.values().next().predict(X[test_mask])
-        
+                y_pred[test_mask] = self.rarity_models_['rarity_uncommon'].predict(X[test_mask])
+    
         if self.log_y:
             y_pred = np.exp(y_pred)
 

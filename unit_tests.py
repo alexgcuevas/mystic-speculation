@@ -102,6 +102,6 @@ if __name__ == "__main__":
     test_SpotPriceByRarityGBR()
     test_model_comparison()
 
-    model_gauntlet()
+    # model_gauntlet()
 
 
