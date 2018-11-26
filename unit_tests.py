@@ -88,7 +88,7 @@ def test_model_comparison():
     
     model_b1 = SpotPriceByRarityGBR(log_y=True)
     modelname_b1 = "SpotPriceByRarityGBR_log"
-    pipe_b1 = create_pipeline(model_b, modelname_b)
+    pipe_b1 = create_pipeline(model_b1, modelname_b1)
 
     run_models_against_baseline([[pipe_a, modelname_a],
                                  [pipe_a1, modelname_a1],
@@ -102,6 +102,6 @@ if __name__ == "__main__":
     test_SpotPriceByRarityGBR()
     test_model_comparison()
 
-    model_gauntlet()
+    # model_gauntlet()
 
 

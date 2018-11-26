@@ -298,7 +298,7 @@ def plot_all_standard_cards(rarities = ['mythic','rare', 'uncommon', 'common'],
     plt.show()    
 
 def plot_all_cards(rarities = ['mythic','rare', 'uncommon', 'common'],
-                   alpha_dict = {'mythic':.15, 'rare':0.05, 'uncommon':0.02, 'common':0.015},
+                   alpha_dict = {'mythic':.15, 'rare':0.05, 'uncommon':0.03, 'common':0.015},
                    color_dict = {'mythic':'r', 'rare':'goldenrod', 'uncommon':'grey', 'common':'cyan'},
                    log_price=True):
   
@@ -311,11 +311,11 @@ def plot_all_cards(rarities = ['mythic','rare', 'uncommon', 'common'],
     for rarity in rarities:
         print("Plotting all {} cards price history".format(rarity))
         seasonal_prices = pd.read_csv('data/clean_cards-{}_seasonal_avg.csv'.format(rarity))
-        seasonal_prices.drop(columns=['cardname','setname','Unnamed: 0'],inplace=True)
+        seasonal_prices.drop(columns=['cardname','setname'],inplace=True)
         for index, card in seasonal_prices.iterrows():
             ax1.plot(dates, card, color=color_dict[rarity], label='_nolegend_', alpha=alpha_dict[rarity])
         print("Plotting {} average price history".format(rarity))
-        my_effects = [pe.Stroke(linewidth=2.5, foreground='k'), pe.Normal()]
+        my_effects = [pe.Stroke(linewidth=3, foreground='k'), pe.Normal()]
         my_label = "avg "+rarity+ " $"
         ax1.plot(dates, seasonal_prices.mean(), label=my_label, path_effects=my_effects, color=color_dict[rarity])
 
@@ -430,5 +430,4 @@ def join_features_seasonal_prices():
     return merged_df
 
 if __name__ == "__main__":
-    cards_df = join_features_seasonal_prices()
-    print(cards_df.info())       
+    plot_all_cards()    

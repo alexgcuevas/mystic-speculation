@@ -248,13 +248,13 @@ def model_gauntlet():
     
     model_b1 = SpotPriceByRarityGBR(log_y=True)
     modelname_b1 = "SpotPriceByRarityGBR_log"
-    pipe_b1 = create_pipeline(model_b, modelname_b)
+    pipe_b1 = create_pipeline(model_b1, modelname_b1)
 
     run_models_against_baseline([[pipe_a, modelname_a],
                                  [pipe_a1, modelname_a1],
                                  [pipe_b, modelname_b],
                                  [pipe_b1, modelname_b1]], 
-                                 cards_df, scorer, n_folds=10)
+                                 cards_df, scorer, n_folds=5)
 
 def GBR_V1():
     pipe = Pipeline([
@@ -364,11 +364,16 @@ class SpotPriceGBR(BaseEstimator, RegressorMixin):
 class SpotPriceByRarityGBR(BaseEstimator, RegressorMixin):
     """ Model using only recent prices, fitting models by rarity"""
     def __init__(self, model=GradientBoostingRegressor(), base_weight=0,
-                 log_y=False, rarities=['mythic', 'rare', 'uncommon', 'common']):
+                 log_y=False, rarities=['mythic', 'rare', 'uncommon', 'common'],
+                 rarity_baseline={'mythic':10,'rare':2,'uncommon':0.5,'common':0.1}):
         self.base_weight = base_weight
         self.model = model
         self.log_y = log_y
         self.rarities = rarities
+        self.rarity_baseline = rarity_baseline
+        if log_y:
+            for key, value in self.rarity_baseline.items():
+                self.rarity_baseline[key] = np.log(value)
         self.rarity_models_ = {}
 
     def fit(self, X_train, y_train):
@@ -389,7 +394,7 @@ class SpotPriceByRarityGBR(BaseEstimator, RegressorMixin):
         return self
 
     def predict(self, X):
-        """ Set floor to GBR predictions """
+        """ Pick fitted GBR model by rarity """
         try:
             getattr(self, "rarity_models_")
         except AttributeError:
@@ -401,17 +406,17 @@ class SpotPriceByRarityGBR(BaseEstimator, RegressorMixin):
 
         for rarity in test_rarities:
             test_mask = X[rarity]==1
-            
-            if (rarity in self.train_rarities_) and (rarity in self.rarity_models_.keys()):    
-                y_pred[test_mask] = self.rarity_models_[rarity].predict(X[test_mask])
-            elif rarity == 'rarity_mythic':
-                y_pred[test_mask] = self.rarity_models_['rarity_rare'].predict(X[test_mask])
-            else:
-                y_pred[test_mask] = self.rarity_models_['rarity_uncommon'].predict(X[test_mask])
-    
+            if test_mask.sum():
+                # If we have a rarity model, fit it; otherwise, use baseline assumption from init 
+                try:
+                    y_pred[test_mask] = self.rarity_models_[rarity].predict(X[test_mask])
+                except:        
+                    y_pred[test_mask] = self.rarity_baseline[rarity]
+
         if self.log_y:
             y_pred = np.exp(y_pred)
 
+        # Set floor to GBR predictions
         y_pred[y_pred<0.1]=0.1
         return y_pred
 
@@ -420,7 +425,7 @@ class SpotPriceByRarityGBR(BaseEstimator, RegressorMixin):
         y_pred = self.predict(X)
         return -rmlse(y_pred, y)
 
-class StandardNormalizerModel(BaseEstimator, RegressorMixin):
+class StandardNormalizerGBR(BaseEstimator, RegressorMixin):
     """Model using only recent prices (done already; need to formalize"""
     def __init__(self):
         pass
