@@ -227,8 +227,7 @@ def run_models_against_baseline(models, cards_df, scorer, n_folds=5):
     # Format & plot results
     return score_dict
 
-def model_gauntlet():
-    cards_df = combine_csv_rarities()
+def model_gauntlet(cards_df):
     scorer = rmlse_scorer
 
     model_a = SpotPriceGBR()

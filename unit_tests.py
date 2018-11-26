@@ -102,6 +102,7 @@ if __name__ == "__main__":
     test_SpotPriceByRarityGBR()
     test_model_comparison()
 
-    # model_gauntlet()
+    cards_df = combine_csv_rarities()
+    model_gauntlet(cards_df)
 
 
