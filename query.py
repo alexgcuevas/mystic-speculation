@@ -243,22 +243,24 @@ def plot_standard_market_size(rarities = ['mythic','rare', 'uncommon', 'common']
     # Plot setup
     standard_total=pd.Series(0, index=std_sets.columns)
     fig, ax1 = plt.subplots()
+    ax1.set_xticks(std_dates)
+    ax2 = ax1.twinx()
 
-    # Calculate & Plot
+    # Calculate standard sums & plot
     for rarity in rarities:
+        print("Getting standard prices for {}s".format(rarity))
         standard_prices = get_standard_prices(rarity, std_sets)
         rarity_sum = standard_prices.drop(columns=['cardname','setname']).sum()
+        print("Plotting standard price trend for {}s".format(rarity))
         ax1.plot_date(std_dates, rarity_sum, '-', label=rarity, color=color_dict[rarity])
         standard_total = standard_total+rarity_sum
+    print("Plotting total standard prices and set counts")   
     ax1.plot_date(std_dates, standard_total, '-', label='total', color='purple')
+    ax2.plot_date(std_dates, std_sets.sum(), '-', color='g', label='# legal sets')
 
     # Format plot
-    ax2 = ax1.twinx()
-    ax2.plot_date(std_dates, std_sets.sum(), '-', color='g', label='# legal sets')
     month_formatter([ax1,ax2])
     ax2.set_yticks(np.arange(0,11,1))
-    ax1.set_xticks(std_dates)
-    ax2.set_xticks(std_dates)
     ax1.grid(True)
     ax1.legend()
     ax2.legend()
@@ -268,28 +270,14 @@ def plot_standard_market_size(rarities = ['mythic','rare', 'uncommon', 'common']
 def plot_all_standard_cards(rarities = ['mythic','rare', 'uncommon', 'common'],
                    alpha_dict = {'mythic':.1, 'rare':0.01, 'uncommon':0.001, 'common':0.001},
                    color_dict = {'mythic':'r', 'rare':'goldenrod', 'uncommon':'silver', 'common':'k'}):
-
-    std_seasons = pd.read_csv('data/standard_seasonality.csv')
-    std_seasons.set_index('setname', inplace=True)
-    seasons = np.array(pd.read_csv("data/season_dates.csv"))
-
-    def seasonal_mask(row):
-        for season in seasons:
-            row[season] = row[season]*std_seasons.loc[row['setname']][season]
-        return row
-
-    dates_df = pd.read_csv('data/season_dates.csv')
-    dates = pd.to_datetime(dates_df['end_date'].values)
+    # Define the standard format
+    std_sets, std_dates = get_standard_format()
     
-    months = MonthLocator(range(1, 13), bymonthday=1, interval=3)
-    monthsFmt = DateFormatter("%b '%y")
-    
+    # Plot setup
+    standard_total=pd.Series(0, index=std_sets.columns)
     fig, ax1 = plt.subplots()
-    
-    ax1.tick_params(axis='x', rotation=90)
-    ax1.xaxis.set_major_locator(months)
-    ax1.xaxis.set_major_formatter(monthsFmt)
-    ax1.xaxis.set_minor_locator(months)
+    ax1.set_xticks(std_dates)
+    ax2 = ax1.twinx()
 
     for rarity in rarities:
         print("Plotting all {} cards price history".format(rarity))
