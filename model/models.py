@@ -1,4 +1,4 @@
-from master_transmuter import *
+from model.master_transmuter import *
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
