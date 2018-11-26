@@ -24,7 +24,10 @@ def format_results(X_test, y_pred, y_test):
     return results_df
 
 def baseline_model(X_train, X_test, y_train, y_test):
-    """guesses mean price by rarity only"""
+    """
+        DEPRECATED
+        Guesses mean price by rarity
+    """
 
     # The set-up (you need this)
     y_train_log = np.log(y_train)
@@ -67,7 +70,7 @@ def fit_basic_pipeline(X_train, X_test, y_train, y_test):
     y_pred = price_corrector(np.exp(y_pred_log))
 
     results_df = format_results(X_test, y_pred, y_test)
-    score = log_score(y_pred, y_test)
+    score = -rmlse(y_pred, y_test)
 
     return pipe, results_df, score
 
@@ -138,6 +141,7 @@ def plot_pred_hist(y_pred, y_test, title):
     plt.show()
 
 def rmlse(y_pred,y_test):
+    """ Calculates Room Mean Log Squared Error of prediction """
     log_diff = np.log(y_pred+1) - np.log(y_test+1)
     return np.sqrt(np.mean(log_diff**2))
 
@@ -173,7 +177,7 @@ def fit_refine_pipeline(X_train, X_test, y_train, y_test):
     results_df['y_pred'] = y_pred
     results_df['y_test'] = y_test
     results_df['log_diff'] = np.abs(np.log(y_pred+1) - np.log(y_test+1))
-    score = log_score(y_pred, y_test)
+    score = -rmlse(y_pred, y_test)
 
     return pipe, results_df, score
 
@@ -190,22 +194,17 @@ def pipe_feature_imports(pipe):
     return pd.DataFrame(feature_importances[feature_importances[:,1].argsort()[::-1]], columns=['feature','importance'])
 
 # TODO NEED TO WRITE PROPER MODELS
-def run_model_against_baseline(model, cards_df, log_y=True, n_folds=5):
+def run_model_against_baseline(model, cards_df, scorer, n_folds=5):
     """
         Assumes cards_df has 'price' as y column 
     """
     # Formats csv into df, excludes sets, and  
-    X, y = csv_cleaner(cards_df, y_col='s28')
+    X, y = csv_cleaner(cards_df)
     
-    # log y_train if applicable
-    if log_y:
-        y = np.log(y)
-
     # Cross-validate model & predict
     baseline = BaselineModel()
-    my_model = GBR_V1() # creates pipeline?
-    base_scores = cross_val_score(baseline, X, y, cv=n_folds, verbose=1)
-    my_scores = cross_val_score(model, X, y, cv=n_folds, verbose=1)
+    base_scores = cross_val_score(baseline, X, y, cv=n_folds, verbose=2, scoring=scorer, n_jobs=-1)
+    my_scores = cross_val_score(model, X, y, cv=n_folds, verbose=2, scoring=scorer, n_jobs=-1)
     print("baseline scores: \n{}".format(base_scores))
     print("my scores: \n{}".format(my_scores))
 
@@ -214,19 +213,33 @@ def run_model_against_baseline(model, cards_df, log_y=True, n_folds=5):
     
     pass
 
-# TODO NEED TO WRITE PROPER BASELINE MODEL
+def GBR_V1():
+    pipe = Pipeline([
+        ('BoolToInt', BoolTransformer()),
+        ('CreatureFeature', CreatureFeatureTransformer()),
+        ('Planeswalker', PlaneswalkerTransformer()),
+        ('AbilityCounts', AbilityCountsTransformer()),
+        ('Fillna', FillTransformer()),
+        ('CostIntensity', CostIntensityTransformer()),
+        ('CreateDummies', CreateDummiesTransformer()),
+        ('DummifyType', TypelineTransformer()),
+        ('DummifyColorID', ColorIDTransformer()),
+        ('DropFeatures', DropFeaturesTransformer()),
+        ('TestFill', TestFillTransformer()),
+        ('SpotPriceGBR', SpotPriceGBR())
+    ])
+    return pipe
+
 class BaselineModel(BaseEstimator, RegressorMixin):
     """Baseline Model to evaluate mine against"""
     def __init__(self):
-        pass
-
-    def fit(self, X, y=None):
-        # Store average prices by rarity for training data
         self.rarity_averages_ = {}
 
+    def fit(self, X, y):
+        # Store average prices by rarity for training data
         for rarity in X['rarity'].unique():
             train_mask = X['rarity']==rarity
-            rarity_averages_[rarity] = y[train_mask].mean()
+            self.rarity_averages_[rarity] = y[train_mask].mean()
         
         return self
 
@@ -235,37 +248,49 @@ class BaselineModel(BaseEstimator, RegressorMixin):
         # Make sure the model has been fit with averages
         try:
             getattr(self, "rarity_averages_")
-        except:
-            raise AttributeError("rarity_averages_ doesn't exist; make sure you fit a model first")    
+        except AttributeError:
+            raise RuntimeError("rarity_averages_ doesn't exist; make sure you fit a model first")    
 
-        y_preds = pd.Series(X.shape[0])
-        
+        y_pred = np.ones(X.shape[0])
+
         for rarity in X['rarity'].unique():
             test_mask = X['rarity']==rarity
-            y_preds[test_mask] = self.rarity_averages_[rarity]
+            if rarity in self.rarity_averages_.keys():
+                y_pred[test_mask] = self.rarity_averages_[rarity]
+            else:
+                y_pred[test_mask] = 1
         
-        return y_preds
+        return y_pred
 
-    def score(self, X, y=None):
+    def score(self, X, y):
         """ Use RMLSE; Root Mean Log Squared Error. Score is -RMLSE, because bigger is better"""
         y_pred = self.predict(X)
         return -rmlse(y_pred, y)
 
-class UnipriceModel(BaseEstimator, TransformerMixin):
-     """Model using only recent prices (done already; need to formalize"""
-    def __init__(self):
-        pass
+# TODO custom scorer, predict floor
+class SpotPriceGBR(BaseEstimator, RegressorMixin):
+    """ Model using only recent prices (done already; need to formalize)"""
+    def __init__(self, model=GradientBoostingRegressor(), base_weight=0):
+        self.base_weight = base_weight
+        self.model = model
 
-    def fit(self, X, y=None):
-        # Cleave split cards and transforms
+    def fit(self, X, y):
+        self.model.fit(X, y)
         return self
 
-    def transform(self, X):
-        df = X.copy()
-        return df
+    def predict(self, X):
+        """ Set floor to GBR predictions """
+        y_pred = self.model.predict(X)
+        y_pred[y_pred<0.1]=0.1
+        return y_pred
 
-class StandardNormalizerModel(BaseEstimator, TransformerMixin):
-     """Model using only recent prices (done already; need to formalize"""
+    def score(self, X, y):
+        """ Use RMLSE; Root Mean Log Squared Error. Score is -RMLSE, because bigger is better"""
+        y_pred = self.predict(X)
+        return -rmlse(y_pred, y)
+
+class StandardNormalizerModel(BaseEstimator, RegressorMixin):
+    """Model using only recent prices (done already; need to formalize"""
     def __init__(self):
         pass
 

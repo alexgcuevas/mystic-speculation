@@ -246,9 +246,9 @@ class DropFeaturesTransformer(BaseEstimator, TransformerMixin):
 
 def csv_cleaner(df, y_col='price'):
     clean_df = df.copy()
-    clean_df.drop(columns='Unnamed: 0', inplace=True)
+    # clean_df.drop(columns=['Unnamed: 0'], inplace=True)
     clean_df.drop_duplicates(inplace=True)
-    clean_df.set_index('id', inplace=True)
+    # clean_df.set_index('id', inplace=True)
 
     set_excluder = SetExclusionTransformer()
     clean_df = set_excluder.transform(clean_df)
