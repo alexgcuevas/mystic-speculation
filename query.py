@@ -219,13 +219,14 @@ def get_standard_prices(rarity, std_sets):
 
     return seasonal_prices.apply(standard_mask, axis=1)
 
-def month_formatter(ax):
-    months = MonthLocator(range(1, 13), bymonthday=1, interval=3)
-    monthsFmt = DateFormatter("%b '%y")
-    ax.tick_params(axis='x', rotation=90)
-    ax.xaxis.set_major_locator(months)
-    ax.xaxis.set_major_formatter(monthsFmt)
-    ax.xaxis.set_minor_locator(months)
+def month_formatter(axs):
+    for ax in axs:
+        months = MonthLocator(range(1, 13), bymonthday=1, interval=3)
+        monthsFmt = DateFormatter("%b '%y")
+        ax.tick_params(axis='x', rotation=90)
+        ax.xaxis.set_major_locator(months)
+        ax.xaxis.set_major_formatter(monthsFmt)
+        ax.xaxis.set_minor_locator(months)
 
 def get_standard_format():
     std_sets = pd.read_csv('data/standard_seasonality.csv')
@@ -254,8 +255,7 @@ def plot_standard_market_size(rarities = ['mythic','rare', 'uncommon', 'common']
     # Format plot
     ax2 = ax1.twinx()
     ax2.plot_date(std_dates, std_sets.sum(), '-', color='g', label='# legal sets')
-    month_formatter(ax1)
-    month_formatter(ax2)
+    month_formatter([ax1,ax2])
     ax2.set_yticks(np.arange(0,11,1))
     ax1.set_xticks(std_dates)
     ax2.set_xticks(std_dates)
