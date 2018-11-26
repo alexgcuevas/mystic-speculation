@@ -159,6 +159,6 @@ plot_all_cards(rarities)
 """ Debug price """
 # >>> See unit_tests
 
-plot_standard_trends()
+plot_standard_market_size()
 plot_all_cards()
 """ 
