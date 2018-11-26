@@ -66,7 +66,7 @@ def test_model_comparison():
     cards_df = combine_csv_rarities()
     model = GBR_V1() # creates pipeline
     scorer = make_scorer(mean_squared_log_error, greater_is_better=False)
-    run_model_against_baseline(model, cards_df, scorer, n_folds=2)
+    run_model_against_baseline(model, cards_df, scorer, n_folds=10)
 
 if __name__ == "__main__":
     # run tessssts

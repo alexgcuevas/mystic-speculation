@@ -206,7 +206,9 @@ def run_model_against_baseline(model, cards_df, scorer, n_folds=5):
     base_scores = cross_val_score(baseline, X, y, cv=n_folds, verbose=2, scoring=scorer, n_jobs=-1)
     my_scores = cross_val_score(model, X, y, cv=n_folds, verbose=2, scoring=scorer, n_jobs=-1)
     print("baseline scores: \n{}".format(base_scores))
+    print("average: {}".format(np.mean(base_scores)))
     print("my scores: \n{}".format(my_scores))
+    print("average: {}".format(np.mean(my_scores)))
 
     # Unlog y_pred if applicable
     # Format & plot results
