@@ -1,4 +1,5 @@
 from model.master_transmuter import *
+from model.models import *
 from scrape.scraper import *
 from query import *
 
@@ -55,9 +56,13 @@ def chandra_price_check():
     df = get_twavg_card(cardname, setname, seasons, tablename)
     print(df)
 
+def test_baseline_model():
+    cards_df = combine_csv_rarities()
+    baseline = BaselineModel()
+    baseline.fit(cards_df, cards_df['price'])
+    print("Test Baseline Score: {}".format(baseline.score(cards_df, cards_df['price'])))
+
 if __name__ == "__main__":
     # run tessssts
-    plot_standard_market_size()
-    plot_all_cards()
-    plot_all_standard_cards()
+    test_baseline_model()
 

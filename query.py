@@ -409,11 +409,12 @@ def combine_csv_rarities(card_view='all_vintage_cards', price_type='recent', dat
                                                                          RARITY=rarity,
                                                                          PRICE_TYPE=price_type)
         try:
-            dfs.append(pd.read_csv(filename))
+            dfs.append(pd.read_csv(filename, index_col='id'))
         except FileNotFoundError:
             raise RuntimeError("Could not find {}. Make sure the path is correct.".format(filename))
     
     cards_df = pd.concat(dfs)
+    cards_df.drop(columns='Unnamed: 0', inplace=True)
     return cards_df
 
 def join_features_seasonal_prices():
