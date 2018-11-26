@@ -157,73 +157,8 @@ rarities = ['mythic']
 plot_all_cards(rarities)
 
 """ Debug price """
+# >>> See unit_tests
 
-def get_twavg_card(cardname, setname, seasons, tablename):
-    c=1000000
-    connection = connect_mystic()
-    seasons_df = pd.DataFrame(columns=['cardname','setname'])
-    for season in seasons:
-        # to timestamp
-        start = str(int(pd.Timestamp(season[0]).value/c))
-        end = str(int(pd.Timestamp(season[1]).value/c))
-
-        # add season bookends to price history, calculate leads and diffs
-        query = ("with add_season_bookends as "
-                "(select ph.cardname, ph.setname, '{START}' as timestamp, ph.price "
-                "from {TABLENAME} ph, "
-                "     (select ph2.cardname, ph2.setname, max(ph2.timestamp) as lastdate "
-                "      from {TABLENAME} ph2 "
-                "      where cast(ph2.timestamp as float) < {START} "
-                "        and ph2.cardname={CARDNAME} "
-                "        and ph2.setname={SETNAME} "
-                "      group by ph2.cardname, ph2.setname) ss "
-                "where ph.timestamp = ss.lastdate "
-                "  and ph.cardname = ss.cardname "
-                "  and ph.setname = ss.setname "
-                "union "
-                "select ph.cardname, ph.setname, '{END}' as timestamp, ph.price "
-                "from {TABLENAME} ph, "
-                "     (select ph2.cardname, ph2.setname, max(ph2.timestamp) as lastdate "
-                "      from {TABLENAME} ph2 "
-                "      where cast(ph2.timestamp as float) < {END} "
-                "        and ph2.cardname={CARDNAME} "
-                "        and ph2.setname={SETNAME} "
-                "      group by ph2.cardname, ph2.setname) ss "
-                "where ph.timestamp = ss.lastdate "
-                "  and ph.cardname = ss.cardname "
-                "  and ph.setname = ss.setname "
-                "union "
-                "select cardname, setname, timestamp, price "
-                "from {TABLENAME} "
-                "where cast(timestamp as float) >= {START} "
-                "  and cast(timestamp as float) <= {END}) "
-                "  and ph2.cardname={CARDNAME} "
-                "  and ph2.setname={SETNAME} "                
-                " "
-                ",timeleads as "
-                "(select *, lead(timestamp) over (partition by cardname, setname order by timestamp) timelead "
-                "from add_season_bookends) "
-                " "
-                ",diffs as "
-                "(select *, date_part('day', to_timestamp(cast(timelead as float)) - to_timestamp(cast(timestamp as float))) as daydiff "
-                "from timeleads) "
-                " "
-                "select cardname, setname, sum(daydiff*price)/sum(daydiff) as s{SEASON} "
-                "from diffs "
-                "group by cardname, setname ").format(START=start,
-                                                      END=end,
-                                                      TABLENAME=tablename,
-                                                      CARDNAME=cardname,
-                                                      SETNAME=setname,
-                                                      SEASON=season[2])
-        season_df = pd.read_sql(query, connection)
-        seasons_df = seasons_df.merge(season_df, on=['cardname','setname'], how='outer')
-
-    return seasons_df    
-
-cardname = 'Chandra, Torch of Defiance'
-setname = 'Kaladesh'
-seasons = np.array(pd.read_csv("data/season_dates.csv"))
-tablename = "mythic_price_history_2"
-df = get_twavg_card(cardname, setname, seasons, tablename)
-df.head()
+plot_standard_trends()
+plot_all_cards()
+""" 

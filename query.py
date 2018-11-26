@@ -207,21 +207,35 @@ def w_avg_price_by_season(seasons, tablename):
 
     return seasons_df
 
-def plot_standard_trends():
+def get_standard_prices():
+    pass
+
+def plot_standard_trends(rarities = ['mythic','rare', 'uncommon', 'common'],
+                         color_dict = {'mythic':'r', 'rare':'goldenrod', 'uncommon':'silver', 'common':'k'}):
+    
     std_seasons = pd.read_csv('data/standard_seasonality.csv')
     std_seasons.set_index('setname', inplace=True)
+    seasons = np.array(pd.read_csv("data/season_dates.csv"))
 
     def seasonal_mask(row):
         for season in seasons:
             row[season] = row[season]*std_seasons.loc[row['setname']][season]
         return row
 
-    rarities = ['mythic','rare', 'uncommon', 'common']
-    standard_price_sums=pd.Series(0, index=std_seasons.columns)
-    color_dict = {'mythic':'r', 'rare':'goldenrod', 'uncommon':'silver', 'common':'k'}
     dates_df = pd.read_csv('data/season_dates.csv')
     dates = pd.to_datetime(dates_df['end_date'].values)
+    
+    months = MonthLocator(range(1, 13), bymonthday=1, interval=3)
+    monthsFmt = DateFormatter("%b '%y")
+    
     fig, ax1 = plt.subplots()
+
+    ax1.tick_params(axis='x', rotation=90)
+    ax1.xaxis.set_major_locator(months)
+    ax1.xaxis.set_major_formatter(monthsFmt)
+    ax1.xaxis.set_minor_locator(months)
+    
+    standard_price_sums=pd.Series(0, index=std_seasons.columns)
 
     for rarity in rarities:
         seasonal_prices = pd.read_csv('data/clean_cards-{}_seasonal_avg.csv'.format(rarity))
@@ -232,31 +246,31 @@ def plot_standard_trends():
         standard_price_sums = standard_price_sums+sums
         ax1.plot(dates, sums.values, label=rarity, color=color_dict[rarity])
 
-    months = MonthLocator(range(1, 13), bymonthday=1, interval=3)
-    monthsFmt = DateFormatter("%b '%y")
-
     ax1.plot_date(dates, standard_price_sums.values, '-', label='total', color='purple')
-    ax1.tick_params(axis='x', rotation=90)
-    ax1.xaxis.set_major_locator(months)
-    ax1.xaxis.set_major_formatter(monthsFmt)
-    ax1.xaxis.set_minor_locator(months)
 
     ax2 = ax1.twinx()
-    ax2.plot_date(dates, std_seasons.sum(), '-', color='g')
-    ax2.xaxis.set_major_locator(months)
-    ax2.xaxis.set_major_formatter(monthsFmt)
-    ax2.xaxis.set_minor_locator(months)
-
+    ax2.plot_date(dates, std_seasons.sum(), '-', color='g', label='# legal sets')
     ax2.set_yticks(np.arange(0,11,1))
     ax2.set_xticks(dates)
     ax1.set_xticks(dates)
     ax1.grid(True)
     ax1.legend()
+    ax2.legend()
     plt.show()
 
-def plot_all_cards(rarities = ['mythic','rare', 'uncommon', 'common'],
+# IN PROGRESS 
+def plot_all_standard_cards(rarities = ['mythic','rare', 'uncommon', 'common'],
                    alpha_dict = {'mythic':.1, 'rare':0.01, 'uncommon':0.001, 'common':0.001},
                    color_dict = {'mythic':'r', 'rare':'goldenrod', 'uncommon':'silver', 'common':'k'}):
+
+    std_seasons = pd.read_csv('data/standard_seasonality.csv')
+    std_seasons.set_index('setname', inplace=True)
+    seasons = np.array(pd.read_csv("data/season_dates.csv"))
+
+    def seasonal_mask(row):
+        for season in seasons:
+            row[season] = row[season]*std_seasons.loc[row['setname']][season]
+        return row
 
     dates_df = pd.read_csv('data/season_dates.csv')
     dates = pd.to_datetime(dates_df['end_date'].values)
@@ -272,14 +286,54 @@ def plot_all_cards(rarities = ['mythic','rare', 'uncommon', 'common'],
     ax1.xaxis.set_minor_locator(months)
 
     for rarity in rarities:
+        print("Plotting all {} cards price history".format(rarity))
         seasonal_prices = pd.read_csv('data/clean_cards-{}_seasonal_avg.csv'.format(rarity))
         seasonal_prices.drop(columns=['cardname','setname','Unnamed: 0'],inplace=True)
         for index, card in seasonal_prices.iterrows():
             ax1.plot(dates, card, color=color_dict[rarity], label='_nolegend_', alpha=alpha_dict[rarity])
         
-        my_effects = [pe.Stroke(linewidth=5, foreground='k'), pe.Normal()]
+        print("Plotting {} average price history".format(rarity))
+        my_effects = [pe.Stroke(linewidth=2.5, foreground='k'), pe.Normal()]
         my_label = "avg "+rarity+ " $"
         ax1.plot(dates, seasonal_prices.mean(), label=my_label, path_effects=my_effects, color=color_dict[rarity])
+
+    ax1.set_xticks(dates)
+    ax1.grid(True)
+    ax1.legend()
+    plt.show()    
+
+def plot_all_cards(rarities = ['mythic','rare', 'uncommon', 'common'],
+                   alpha_dict = {'mythic':.1, 'rare':0.01, 'uncommon':0.01, 'common':0.01},
+                   color_dict = {'mythic':'r', 'rare':'goldenrod', 'uncommon':'silver', 'common':'k'},
+                   log_price=True):
+
+    dates_df = pd.read_csv('data/season_dates.csv')
+    dates = pd.to_datetime(dates_df['end_date'].values)
+    
+    months = MonthLocator(range(1, 13), bymonthday=1, interval=3)
+    monthsFmt = DateFormatter("%b '%y")
+    
+    fig, ax1 = plt.subplots()
+    
+    ax1.tick_params(axis='x', rotation=90)
+    ax1.xaxis.set_major_locator(months)
+    ax1.xaxis.set_major_formatter(monthsFmt)
+    ax1.xaxis.set_minor_locator(months)
+
+    for rarity in rarities:
+        print("Plotting all {} cards price history".format(rarity))
+        seasonal_prices = pd.read_csv('data/clean_cards-{}_seasonal_avg.csv'.format(rarity))
+        seasonal_prices.drop(columns=['cardname','setname','Unnamed: 0'],inplace=True)
+        for index, card in seasonal_prices.iterrows():
+            ax1.plot(dates, card, color=color_dict[rarity], label='_nolegend_', alpha=alpha_dict[rarity])
+        
+        print("Plotting {} average price history".format(rarity))
+        my_effects = [pe.Stroke(linewidth=2.5, foreground='k'), pe.Normal()]
+        my_label = "avg "+rarity+ " $"
+        ax1.plot(dates, seasonal_prices.mean(), label=my_label, path_effects=my_effects, color=color_dict[rarity])
+
+    if log_price:
+        ax1.set_yscale("log", nonposy='clip')
 
     ax1.set_xticks(dates)
     ax1.grid(True)
@@ -312,6 +366,8 @@ def clean_seasonal_price_outliers(rarities):
             'Beatdown Box Set',
             'Starter 2000',
             'Starter 1999',
+            'Prerelease Events',
+            'Release Events',
             # 'Commander 2013',
             # 'Commander 2014',
             # 'Commander 2015',
