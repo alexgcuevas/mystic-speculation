@@ -326,7 +326,7 @@ def plot_all_cards(rarities = ['mythic','rare', 'uncommon', 'common'],
     ax1.legend()
     plt.show()    
 
-def clean_seasonal_price_outliers(rarities):
+def clean_seasonal_price_outliers(rarities = ['mythic','rare', 'uncommon', 'common']):
     for rarity in rarities:
         # Load and index cards
         cards_df = pd.read_csv('data/all_vintage_cards-{}_seasonal_avg.csv'.format(rarity))
@@ -365,7 +365,7 @@ def clean_seasonal_price_outliers(rarities):
 
         # Reset index and rewrite
         cards_df.reset_index(inplace=True)
-        cards_df.to_csv('data/clean_cards-{}_seasonal_avg.csv'.format(rarity))
+        cards_df.to_csv('data/clean_cards-{}_seasonal_avg.csv'.format(rarity),index=False)
 
 def connect_mystic():
     '''
@@ -389,6 +389,7 @@ def connect_mystic():
     connection = engine.connect()
     return connection
 
+# TODO: merge prices + feature data and write to file
 def write_seasonal_averages(rarities):
     cards_df = pd.read_csv('data/all_vintage_cards.csv')
     seasons = np.array(pd.read_csv("data/season_dates.csv"))
@@ -399,8 +400,34 @@ def write_seasonal_averages(rarities):
         print("Writing seasonal {} prices to csv".format(rarity))
         seasonal_price_history.to_csv(path_or_buf='data/all_vintage_cards-{}_seasonal_avg.csv'.format(rarity))
 
+def combine_csv_rarities(card_view='all_vintage_cards', price_type='recent', data='data'):
+    rarities = ['mythic','rare','uncommon','common']
+    dfs = []
+    for rarity in rarities:
+        filename = '{DATA}/{CARD_VIEW}-{RARITY}_{PRICE_TYPE}.csv'.format(DATA=data,
+                                                                         CARD_VIEW=card_view,
+                                                                         RARITY=rarity,
+                                                                         PRICE_TYPE=price_type)
+        try:
+            dfs.append(pd.read_csv(filename))
+        except FileNotFoundError:
+            raise RuntimeError("Could not find {}. Make sure the path is correct.".format(filename))
+    
+    cards_df = pd.concat(dfs)
+    return cards_df
+
+def join_features_seasonal_prices():
+    """ Joins card features with seasonal average prices """
+    prices_df = combine_csv_rarities(card_view='all_vintage_cards', price_type='seasonal_avg')
+    features_df = pd.read_csv('data/all_vintage_cards.csv',index_col=None)
+    merged_df = pd.merge(features_df, prices_df, left_on=['name','set_name'], 
+                                                 right_on=['cardname','setname'],
+                                                 how='inner')
+    merged_df.drop(columns=['cardname', 'setname','Unnamed: 0'], inplace=True)
+    merged_df.set_index('id', inplace=True)
+    
+    return merged_df
 
 if __name__ == "__main__":
-    rarities = ['mythic','rare', 'uncommon', 'common']
-    write_seasonal_averages(rarities)
-    clean_seasonal_price_outliers(rarities)
+    cards_df = join_features_seasonal_prices()
+    print(cards_df.info())       

@@ -8,6 +8,8 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 
 from sklearn.linear_model import LinearRegression
+from sklearn.base import BaseEstimator, TransformerMixin, RegressorMixin
+from sklearn.metrics import make_scorer, mean_squared_log_error
 from sklearn.pipeline import Pipeline
 from sklearn.ensemble import GradientBoostingRegressor
 from sklearn.model_selection import train_test_split
@@ -38,7 +40,7 @@ def baseline_model(X_train, X_test, y_train, y_test):
     y_pred = price_corrector(np.exp(y_pred_log))
 
     results_df = format_results(X_test, y_pred, y_test)
-    score = log_score(y_pred, y_test)
+    score = -rmlse(y_pred, y_test)
 
     return results_df, score
 
@@ -135,7 +137,7 @@ def plot_pred_hist(y_pred, y_test, title):
     plt.legend()
     plt.show()
 
-def log_score(y_pred,y_test):
+def rmlse(y_pred,y_test):
     log_diff = np.log(y_pred+1) - np.log(y_test+1)
     return np.sqrt(np.mean(log_diff**2))
 
@@ -213,18 +215,41 @@ def run_model_against_baseline(model, cards_df, log_y=True, n_folds=5):
     pass
 
 # TODO NEED TO WRITE PROPER BASELINE MODEL
-class BaselineModel(BaseEstimator, TransformerMixin):
+class BaselineModel(BaseEstimator, RegressorMixin):
     """Baseline Model to evaluate mine against"""
     def __init__(self):
         pass
 
     def fit(self, X, y=None):
-        # Cleave split cards and transforms
+        # Store average prices by rarity for training data
+        self.rarity_averages_ = {}
+
+        for rarity in X['rarity'].unique():
+            train_mask = X['rarity']==rarity
+            rarity_averages_[rarity] = y[train_mask].mean()
+        
         return self
 
-    def transform(self, X):
-        df = X.copy()
-        return df
+    def predict(self, X):
+        """ Predict mean prices by rarity, based on training data """
+        # Make sure the model has been fit with averages
+        try:
+            getattr(self, "rarity_averages_")
+        except:
+            raise AttributeError("rarity_averages_ doesn't exist; make sure you fit a model first")    
+
+        y_preds = pd.Series(X.shape[0])
+        
+        for rarity in X['rarity'].unique():
+            test_mask = X['rarity']==rarity
+            y_preds[test_mask] = self.rarity_averages_[rarity]
+        
+        return y_preds
+
+    def score(self, X, y=None):
+        """ Use RMLSE; Root Mean Log Squared Error. Score is -RMLSE, because bigger is better"""
+        y_pred = self.predict(X)
+        return -rmlse(y_pred, y)
 
 class UnipriceModel(BaseEstimator, TransformerMixin):
      """Model using only recent prices (done already; need to formalize"""
