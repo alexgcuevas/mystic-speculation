@@ -441,6 +441,15 @@ class StandardNormalizerGBR(BaseEstimator, RegressorMixin):
         """ """
         pass
 
+    def _get_standard_prices(seasonal_prices_df, std_sets_df):
+        """ Takes in seasonal price dataframe and standard set legality, returns prices of cards in standard """ 
+        seasons = std_sets_df.columns
+        def standard_mark(row):
+            for season in seasons:
+                row[season] = row[season]*std_sets_df.loc(row['setname'])[season]
+
+        return seasonal_prices.apply(standard_mask, axis=1)
+
     def _predict_standard_market(std_prices_df, std_sets_df, next_sets):
         """ Fits linear regression to standard market trend to predict size at next season, given standard legal set count """
         # x variables: season num, sin(num sets), interaction 
