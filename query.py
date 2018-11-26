@@ -209,7 +209,6 @@ def w_avg_price_by_season(seasons, tablename):
 
 def get_standard_prices(rarity, std_sets):
     seasonal_prices = pd.read_csv('data/clean_cards-{}_seasonal_avg.csv'.format(rarity))
-    seasonal_prices.drop(columns='Unnamed: 0',inplace=True)
     seasons = set(seasonal_prices.columns) and set(std_sets.columns)
 
     def standard_mask(row):
@@ -430,4 +429,4 @@ def join_features_seasonal_prices():
     return merged_df
 
 if __name__ == "__main__":
-    plot_all_cards()    
+    plot_standard_market_size()

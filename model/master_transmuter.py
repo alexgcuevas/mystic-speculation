@@ -457,3 +457,75 @@ class AbilityCountsTransformer(BaseEstimator, TransformerMixin):
 
         return df
 
+# TODO: Complete 
+class SeasonNormalizerTransformer(BaseEstimator, TransformerMixin):
+    """ Transforms seasonal price history into target """
+    def __init__(self, seasons=[]):
+        self.seasons = seasons
+
+    def fit(self, X, y=None):
+        """identifies all subtypes"""
+        # Cleave split cards and transforms
+        cards = [x.split('//') for x in X['type_line'].unique()]
+        for card in cards:
+            for subcard in card:
+                types = subcard.split(' — ')
+                self.mod_types.update(set(types[0].split()) - self.card_types)
+                try:
+                    self.sub_types.update(set(types[1].split()))
+                except:
+                    pass
+                    
+        return self
+
+    def transform(self, X):
+        """Drops unnamed column & duplicates, and sets id as index"""
+        df = X.copy()
+
+        def type_sets(row):
+            card_types = set()
+            sub_types = set()
+            mod_types = set()
+            card = row['type_line'].split('//')
+            for subcard in card:
+                types = subcard.split(' — ')
+                card_types.update(set(types[0].split()) & self.card_types)
+                mod_types.update(set(types[0].split()) - self.card_types)
+                try:
+                    sub_types.update(set(types[1].split()))
+                except:
+                    pass
+            row['card_types'] = card_types
+            row['mod_types'] = mod_types
+            row['sub_types'] = sub_types
+            return row
+
+        def type_dummies(row):
+            for card_type in self.card_types:
+                row[card_type] = 1*(card_type in row['card_types'])
+            for mod_type in self.mod_types:
+                row[mod_type] = 1*(mod_type in row['mod_types'])
+            return row
+
+        df = df.apply(type_sets, axis=1)
+        # Dummify card type membership, type_mod membership
+        df = df.apply(type_dummies, axis=1)
+
+        return df
+
+class StandardSeasonTransformer(BaseEstimator, TransformerMixin):
+    """ Add features to season matrix """
+
+    def fit(self, X, y=None):
+        pass
+
+    def transform(self, X, y=None):
+        """ X has 'set_count' and 'season' as column """
+        Xt = X.copy()
+        Xt['set_count_sq'] = np.square(Xt['set_count'])
+        Xt['set_count_rt'] = np.sqrt(Xt['set_count'])
+        Xt['sin_set'] = np.sin(Xt['set_count'])
+
+        return Xt
+
+

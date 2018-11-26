@@ -421,14 +421,98 @@ class SpotPriceByRarityGBR(BaseEstimator, RegressorMixin):
         return -rmlse(y_pred, y)
 
 class StandardNormalizerGBR(BaseEstimator, RegressorMixin):
-    """Model using only recent prices (done already; need to formalize"""
-    def __init__(self):
+    """ Uses price history of rarities across standard season to normalize power """
+    def __init__(self, model=GradientBoostingRegressor(), base_weight=0,
+                 log_y=False, rarities=['mythic', 'rare', 'uncommon', 'common'],
+                 rarity_baseline={'mythic':10,'rare':2,'uncommon':0.5,'common':0.1}):
+        self.base_weight = base_weight
+        self.model = model
+        self.log_y = log_y
+        self.rarities = rarities
+        self.rarity_baseline = rarity_baseline
+        self.rarity_models_ = {}
+
+    def _get_seasons(df):
+        """ finds seasons in columns of df and returns list of them """
+        seasons = [x for x in df.columns if x.strip('s').isnumeric()] 
+        return seasons
+    
+    def _season_attrs():
+        """ """
         pass
 
-    def fit(self, X, y=None):
-        # Cleave split cards and transforms
+    def _predict_standard_market(std_prices_df, std_sets_df, next_sets):
+        """ Fits linear regression to standard market trend to predict size at next season, given standard legal set count """
+        # x variables: season num, sin(num sets), interaction 
+        seasons = std_sets_df.shape[1]
+
+        X_train = pd.DataFrame()
+        X_train['set_count'] = std_sets_df.sum().reset_index(drop=True)
+        X_train['season'] = X.index + 1
+
+        y_train = std_prices_df.drop(columns=['cardname','setname']).sum()
+
+        std_xfmr = StandardSeasonTransformer()
+        X_train_prime = std_xfmr.transform(X_train)
+
+        lr = LinearRegression()
+        lr.fit(X_train_prime, y_train)
+
+        X_test = pd.DataFrame({'set_count':[next_sets], 'season':[seasons+1]})
+        X_test_prime = std_xfmr.transform(X_test)
+
+        y_pred = lr.predict(X_test_prime)
+        return y_pred
+
+
+
+    def fit(self, X_train, y_train):
+        X = X_train.copy()
+        y = y_train.copy()
+
+        if self.log_y:
+            for key, value in self.rarity_baseline.items():
+                self.rarity_baseline[key] = np.log(value)
+            y = np.log(y)
+        
+        self.train_rarities_ = [x for x in X.columns if x.startswith('rarity_')]
+
+        for rarity in self.train_rarities_:
+            train_mask = X[rarity]==1
+            rarity_model = clone(self.model)
+            rarity_model.fit(X[train_mask], y[train_mask])
+            self.rarity_models_[rarity] = rarity_model
+        
         return self
 
-    def transform(self, X):
-        df = X.copy()
-        return df
+    def predict(self, X):
+        """ Pick fitted GBR model by rarity """
+        try:
+            getattr(self, "rarity_models_")
+        except AttributeError:
+            raise RuntimeError("rarity_models_ doesn't exist; make sure you fit a model first")    
+
+        y_pred = np.ones(X.shape[0])
+
+        test_rarities = [x for x in X.columns if x.startswith('rarity_')]
+
+        for rarity in test_rarities:
+            test_mask = X[rarity]==1
+            if test_mask.sum():
+                # If we have a rarity model, fit it; otherwise, use baseline assumption from init 
+                try:
+                    y_pred[test_mask] = self.rarity_models_[rarity].predict(X[test_mask])
+                except:        
+                    y_pred[test_mask] = self.rarity_baseline[rarity]
+
+        if self.log_y:
+            y_pred = np.exp(y_pred)
+
+        # Set floor to GBR predictions
+        y_pred[y_pred<0.1]=0.1
+        return y_pred
+
+    def score(self, X, y):
+        """ Use RMLSE; Root Mean Log Squared Error. Score is -RMLSE, because bigger is better"""
+        y_pred = self.predict(X)
+        return -rmlse(y_pred, y)
