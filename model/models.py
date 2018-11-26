@@ -361,7 +361,7 @@ class SpotPriceByRarityGBR(BaseEstimator, RegressorMixin):
     """ Model using only recent prices, fitting models by rarity"""
     def __init__(self, model=GradientBoostingRegressor(), base_weight=0,
                  log_y=False, rarities=['mythic', 'rare', 'uncommon', 'common'],
-                 rarity_baseline={'mythic':10,'rare':2,'uncommon':0.5,'common':0.1}):
+                 rarity_baseline={'mythic':10,'rare':1.5,'uncommon':0.5,'common':0.2}):
         self.base_weight = base_weight
         self.model = model
         self.log_y = log_y
@@ -424,7 +424,7 @@ class StandardNormalizerGBR(BaseEstimator, RegressorMixin):
     """ Uses price history of rarities across standard season to normalize power """
     def __init__(self, model=GradientBoostingRegressor(), base_weight=0,
                  log_y=False, rarities=['mythic', 'rare', 'uncommon', 'common'],
-                 rarity_baseline={'mythic':10,'rare':2,'uncommon':0.5,'common':0.1}):
+                 rarity_baseline={'mythic':10,'rare':1.5,'uncommon':0.5,'common':0.2}):
         self.base_weight = base_weight
         self.model = model
         self.log_y = log_y
@@ -432,25 +432,28 @@ class StandardNormalizerGBR(BaseEstimator, RegressorMixin):
         self.rarity_baseline = rarity_baseline
         self.rarity_models_ = {}
 
-    def _get_seasons(df):
+    def _get_seasons(self, df):
         """ finds seasons in columns of df and returns list of them """
         seasons = [x for x in df.columns if x.strip('s').isnumeric()] 
         return seasons
     
-    def _season_attrs():
-        """ """
-        pass
 
-    def _get_standard_prices(seasonal_prices_df, std_sets_df):
+    def _drop_seasons(self, df):
+        """ Returns df with season features dropped. Used after getting season attrs, before fitting X """
+        seasons = self._get_seasons(df)
+        return df.drop(columns=seasons)
+
+    def _get_standard_prices(self, seasonal_prices_df, std_sets_df):
         """ Takes in seasonal price dataframe and standard set legality, returns prices of cards in standard """ 
         seasons = std_sets_df.columns
-        def standard_mark(row):
+        def standard_mask(row):
             for season in seasons:
                 row[season] = row[season]*std_sets_df.loc(row['setname'])[season]
+            return row
 
-        return seasonal_prices.apply(standard_mask, axis=1)
+        return seasonal_prices_df.apply(standard_mask, axis=1)
 
-    def _predict_standard_market(std_prices_df, std_sets_df, next_sets):
+    def _predict_standard_market(self, std_prices_df, std_sets_df, next_sets):
         """ Fits linear regression to standard market trend to predict size at next season, given standard legal set count """
         # x variables: season num, sin(num sets), interaction 
         seasons = std_sets_df.shape[1]
@@ -473,7 +476,14 @@ class StandardNormalizerGBR(BaseEstimator, RegressorMixin):
         y_pred = lr.predict(X_test_prime)
         return y_pred
 
-
+    
+    def _season_attrs(self):
+        """ Calculates, sets attributes to scale y during fitting process """
+        ptpt = PriceToPowerTransformer()
+        ptpt.fit(y)
+        self.price_transformer_ = ptpt
+        ptpt.transform(y)
+        pass
 
     def fit(self, X_train, y_train):
         X = X_train.copy()

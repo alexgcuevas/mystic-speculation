@@ -527,4 +527,63 @@ class StandardSeasonTransformer(BaseEstimator, TransformerMixin):
 
         return Xt
 
+class PriceToPowerTransformer(BaseEstimator, TransformerMixin):
+    """ Transforms price to power by scaling according to rarity, based on observed trends """
+    def __init__(self, rarity_baseline={'mythic':10,'rare':1.5,'uncommon':0.5,'common':0.2}):
+        self.rarity_baseline = rarity_baseline
+
+    def _get_seasons(self, df):
+        """ finds seasons in columns of df and returns list of them """
+        seasons = [x for x in df.columns if x.strip('s').isnumeric()] 
+        return seasons
+
+    def fit(self, X, y=None):
+        """ calculates average price by rarity of cards, averages over seasons, loads into attribute. Requires 'rarity' column """
+        self.rarity_scaler_ = self.rarity_baseline.copy()
+        seasonal_prices_df = X.copy()
+        seasons = self._get_seasons(seasonal_prices_df)
+        for rarity in self.rarity_baseline.keys():
+            rare_mask = seasonal_prices_df['rarity']==rarity
+            if rare_mask:
+                rare_mean = seasonal_prices_df[rare_mask].mean()
+                for avg_price in rare_mean:
+                    self.rarity_scaler_[rarity] = np.mean(self.rarity_scaler_[rarity], avg_price) 
+
+        return self
+
+    def transform(self, X, y_price):
+        """ transforms price in dollars into unitless power metric (pegged to avg mythic price) """
+        rarity_df = X.copy()
+        y_power = np.ones(y_price.shape[0])
+
+        for rarity in self.rarity_baseline.keys():
+            rare_mask = rarity_df['rarity']==rarity
+            if rare_mask:
+                # Scales to mean mythic rare price
+                ratio = self.rarity_scaler_['mythic']/self.rarity_scaler_[rarity]
+                y_power[rare_mask] = ratio*y_price[rare_mask]
+
+        return y_power
+
+    def inverse_transform(self, X, y_power):
+        """ transforms power back into price """
+        rarity_df = X.copy()
+        y_price = np.ones(y_price.shape[0])
+
+        for rarity in self.rarity_baseline.keys():
+            rare_mask = rarity_df['rarity']==rarity
+            if rare_mask:
+                ratio = self.rarity_scaler_[rarity]/self.rarity_scaler_['mythic']
+                y_price[rare_mask] = ratio*y_power[rare_mask]
+
+        return y_price
+
+
+    # TODO optimize efficiency by combining code from fit and transform
+    def fit_transform(self, X, y_price):
+        """ Performs fit and transform in one step, returning transformed price to power """
+        self.fit(X)
+        y_power = self.transform(X, y_price)
+
+        return y_power
 
