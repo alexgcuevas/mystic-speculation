@@ -456,3 +456,31 @@ class AbilityCountsTransformer(BaseEstimator, TransformerMixin):
         df = df.apply(count_abilities, axis=1)
 
         return df
+
+# TODO NEED TO WRITE PROPER BASELINE MODEL
+class BaselineModel(BaseEstimator, TransformerMixin):
+    """Creates Dummies for typeline"""
+    def __init__(self):
+        pass
+
+    def fit(self, X, y=None):
+        # Cleave split cards and transforms
+        cards = [x.split('//') for x in X['type_line'].unique()]
+        for card in cards:
+            for subcard in card:
+                types = subcard.split(' — ')
+                self.mod_types.update(set(types[0].split()) - self.card_types)
+                try:
+                    self.sub_types.update(set(types[1].split()))
+                except:
+                    pass
+        return self
+
+    def transform(self, X):
+        df = X.copy()
+
+        df = df.apply(type_sets, axis=1)
+        # Dummify card type membership, type_mod membership
+        df = df.apply(type_dummies, axis=1)
+
+        return df

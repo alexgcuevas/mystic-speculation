@@ -279,12 +279,12 @@ def plot_all_standard_cards(rarities = ['mythic','rare', 'uncommon', 'common'],
 
     # Plot every card in standard
     for rarity in rarities:
-        print("Plotting all {} cards price history".format(rarity))
+        print("Plotting all standard {} cards price history".format(rarity))
         standard_prices = get_standard_prices(rarity, std_sets)
         standard_prices.drop(columns=['cardname','setname'],inplace=True)
         for index, card in standard_prices.iterrows():
             ax1.plot_date(std_dates, card, '-', color=color_dict[rarity], label='_nolegend_', alpha=alpha_dict[rarity])
-        print("Plotting {} average price history".format(rarity))
+        print("Plotting mean standard {} price history".format(rarity))
         my_effects = [pe.Stroke(linewidth=2.5, foreground='k'), pe.Normal()]
         my_label = "avg "+rarity+ " $"
         ax1.plot_date(std_dates, standard_prices.mean(), '-', label=my_label, path_effects=my_effects, color=color_dict[rarity])

@@ -187,15 +187,67 @@ def pipe_feature_imports(pipe):
     feature_importances = np.array([features, feature_importances]).T
     return pd.DataFrame(feature_importances[feature_importances[:,1].argsort()[::-1]], columns=['feature','importance'])
 
-def run_model_against_baseline(model, raw_df, log_y=True, n_folds=5):
-    # Run data through cleaner
-    X, y = csv_cleaner(model)
+# TODO NEED TO WRITE PROPER MODELS
+def run_model_against_baseline(model, cards_df, log_y=True, n_folds=5):
+    """
+        Assumes cards_df has 'price' as y column 
+    """
+    # Formats csv into df, excludes sets, and  
+    X, y = csv_cleaner(cards_df, y_col='s28')
+    
     # log y_train if applicable
-    
-    # Cross-validate model & predict
-    
-    # Unlog y_pred if applicable
+    if log_y:
+        y = np.log(y)
 
+    # Cross-validate model & predict
+    baseline = BaselineModel()
+    my_model = GBR_V1() # creates pipeline?
+    base_scores = cross_val_score(baseline, X, y, cv=n_folds, verbose=1)
+    my_scores = cross_val_score(model, X, y, cv=n_folds, verbose=1)
+    print("baseline scores: \n{}".format(base_scores))
+    print("my scores: \n{}".format(my_scores))
+
+    # Unlog y_pred if applicable
     # Format & plot results
     
     pass
+
+# TODO NEED TO WRITE PROPER BASELINE MODEL
+class BaselineModel(BaseEstimator, TransformerMixin):
+    """Baseline Model to evaluate mine against"""
+    def __init__(self):
+        pass
+
+    def fit(self, X, y=None):
+        # Cleave split cards and transforms
+        return self
+
+    def transform(self, X):
+        df = X.copy()
+        return df
+
+class UnipriceModel(BaseEstimator, TransformerMixin):
+     """Model using only recent prices (done already; need to formalize"""
+    def __init__(self):
+        pass
+
+    def fit(self, X, y=None):
+        # Cleave split cards and transforms
+        return self
+
+    def transform(self, X):
+        df = X.copy()
+        return df
+
+class StandardNormalizerModel(BaseEstimator, TransformerMixin):
+     """Model using only recent prices (done already; need to formalize"""
+    def __init__(self):
+        pass
+
+    def fit(self, X, y=None):
+        # Cleave split cards and transforms
+        return self
+
+    def transform(self, X):
+        df = X.copy()
+        return df
