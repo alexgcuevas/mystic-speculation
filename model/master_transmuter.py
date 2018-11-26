@@ -457,7 +457,7 @@ class AbilityCountsTransformer(BaseEstimator, TransformerMixin):
 
         return df
 
-# TODO: Complete 
+# TODO: This doesn't do anything right now
 class SeasonNormalizerTransformer(BaseEstimator, TransformerMixin):
     """ Transforms seasonal price history into target """
     def __init__(self, seasons=[]):
@@ -515,9 +515,8 @@ class SeasonNormalizerTransformer(BaseEstimator, TransformerMixin):
 
 class StandardSeasonTransformer(BaseEstimator, TransformerMixin):
     """ Add features to season matrix """
-
     def fit(self, X, y=None):
-        pass
+        return self
 
     def transform(self, X, y=None):
         """ X has 'set_count' and 'season' as column """
