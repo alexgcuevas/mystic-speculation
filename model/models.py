@@ -145,6 +145,11 @@ def rmlse(y_pred,y_test):
     log_diff = np.log(y_pred+1) - np.log(y_test+1)
     return np.sqrt(np.mean(log_diff**2))
 
+def rmlse_scorer(estimator, X, y):
+    y_pred = estimator.predict(X)
+    log_diff = np.log(y_pred+1) - np.log(y+1)
+    return np.sqrt(np.mean(log_diff**2))
+
 def price_corrector(y_pred):
     y_pred = np.array(y_pred) 
     y_pred[y_pred < 0.10] = 0.10
@@ -290,6 +295,51 @@ class SpotPriceGBR(BaseEstimator, RegressorMixin):
         """ Use RMLSE; Root Mean Log Squared Error. Score is -RMLSE, because bigger is better"""
         y_pred = self.predict(X)
         return -rmlse(y_pred, y)
+
+class SpotPriceByRarityGBR(BaseEstimator, RegressorMixin):
+    """ Model using only recent prices, fitting models by rarity"""
+    def __init__(self, model=GradientBoostingRegressor(), base_weight=0, log_y=False):
+        self.base_weight = base_weight
+        self.model = model
+        self.log_y = log_y
+        self.rarity_models_ = {}
+
+    def fit(self, X, y):
+        for rarity in X['rarity'].unique():
+            train_mask = X['rarity']==rarity
+            rarity_model = model.copy()
+            rarity_model.fit(X[train_mask], y[train_mask])
+            self.rarity_models_[rarity] = rarity_model
+        
+        return self
+
+    def predict(self, X):
+        """ Set floor to GBR predictions """
+        try:
+            getattr(self, "rarity_models_")
+        except AttributeError:
+            raise RuntimeError("rarity_models_ doesn't exist; make sure you fit a model first")    
+
+        y_pred = np.ones(X.shape[0])
+
+        for rarity in X['rarity'].unique():
+            test_mask = X['rarity']==rarity
+            if rarity in self.rarity_models_.keys():
+                y_pred[test_mask] = self.rarity_models_[rarity].predict(X[test_mask])
+            else:
+                y_pred[test_mask] = 1
+        
+        if self.log_y:
+            y_pred = np.exp(y_pred)
+
+        y_pred[y_pred<0.1]=0.1
+        return y_pred
+
+    def score(self, X, y):
+        """ Use RMLSE; Root Mean Log Squared Error. Score is -RMLSE, because bigger is better"""
+        y_pred = self.predict(X)
+        return -rmlse(y_pred, y)
+
 
 class StandardNormalizerModel(BaseEstimator, RegressorMixin):
     """Model using only recent prices (done already; need to formalize"""
