@@ -250,8 +250,8 @@ def model_gauntlet():
     modelname_b1 = "SpotPriceByRarityGBR_log"
     pipe_b1 = create_pipeline(model_b1, modelname_b1)
 
-    run_models_against_baseline([[pipe_a, modelname_a],
-                                 [pipe_a1, modelname_a1],
+    run_models_against_baseline([#[pipe_a, modelname_a],
+                                 #[pipe_a1, modelname_a1],
                                  [pipe_b, modelname_b],
                                  [pipe_b1, modelname_b1]], 
                                  cards_df, scorer, n_folds=5)
@@ -371,9 +371,6 @@ class SpotPriceByRarityGBR(BaseEstimator, RegressorMixin):
         self.log_y = log_y
         self.rarities = rarities
         self.rarity_baseline = rarity_baseline
-        if log_y:
-            for key, value in self.rarity_baseline.items():
-                self.rarity_baseline[key] = np.log(value)
         self.rarity_models_ = {}
 
     def fit(self, X_train, y_train):
@@ -381,6 +378,8 @@ class SpotPriceByRarityGBR(BaseEstimator, RegressorMixin):
         y = y_train.copy()
 
         if self.log_y:
+            for key, value in self.rarity_baseline.items():
+                self.rarity_baseline[key] = np.log(value)
             y = np.log(y)
         
         self.train_rarities_ = [x for x in X.columns if x.startswith('rarity_')]

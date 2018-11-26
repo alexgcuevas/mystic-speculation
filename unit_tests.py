@@ -60,7 +60,7 @@ def test_baseline_model():
     cards_df = combine_csv_rarities()
     baseline = BaselineModel()
     baseline.fit(cards_df, cards_df['price'])
-    print("Test Baseline Score: {}".format(baseline.score(cards_df, cards_df['price'])))
+    print("Train Baseline Score: {}".format(baseline.score(cards_df, cards_df['price'])))
 
 def test_SpotPriceByRarityGBR():
     cards_df = combine_csv_rarities().sample(100)
@@ -68,7 +68,7 @@ def test_SpotPriceByRarityGBR():
     modelname = "SpotPriceByRarityGBR"
     pipe = create_pipeline(model, modelname)
     pipe.fit(cards_df, cards_df['price'])
-    print("Test SpotPriceByRarityGBR Score: {}".format(pipe.score(cards_df, cards_df['price'])))
+    print("Train SpotPriceByRarityGBR Score: {}".format(pipe.score(cards_df, cards_df['price'])))
 
 def test_model_comparison():
     cards_df = combine_csv_rarities().sample(100)
