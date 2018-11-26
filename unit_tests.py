@@ -62,13 +62,46 @@ def test_baseline_model():
     baseline.fit(cards_df, cards_df['price'])
     print("Test Baseline Score: {}".format(baseline.score(cards_df, cards_df['price'])))
 
+def test_SpotPriceByRarityGBR():
+    cards_df = combine_csv_rarities().sample(100)
+    model = SpotPriceByRarityGBR()
+    modelname = "SpotPriceByRarityGBR"
+    pipe = create_pipeline(model, modelname)
+    pipe.fit(cards_df, cards_df['price'])
+    print("Test SpotPriceByRarityGBR Score: {}".format(pipe.score(cards_df, cards_df['price'])))
+
 def test_model_comparison():
-    cards_df = combine_csv_rarities()
-    model = GBR_V1() # creates pipeline
-    scorer = make_scorer(mean_squared_log_error, greater_is_better=False)
-    run_model_against_baseline(model, cards_df, scorer, n_folds=10)
+    cards_df = combine_csv_rarities().sample(100)
+    scorer = rmlse_scorer
+    
+    model_a = SpotPriceGBR()
+    modelname_a = "SpotPriceGBR"
+    pipe_a = create_pipeline(model_a, modelname_a)
+
+    model_a1 = SpotPriceGBR(log_y=True)
+    modelname_a1 = "SpotPriceGBR_log"
+    pipe_a1 = create_pipeline(model_a1, modelname_a1)
+
+    model_b = SpotPriceByRarityGBR()
+    modelname_b = "SpotPriceByRarityGBR"
+    pipe_b = create_pipeline(model_b, modelname_b)
+    
+    model_b1 = SpotPriceByRarityGBR(log_y=True)
+    modelname_b1 = "SpotPriceByRarityGBR_log"
+    pipe_b1 = create_pipeline(model_b, modelname_b)
+
+    run_models_against_baseline([[pipe_a, modelname_a],
+                                 [pipe_a1, modelname_a1],
+                                 [pipe_b, modelname_b],
+                                 [pipe_b1, modelname_b1]], 
+                                 cards_df, scorer, n_folds=2)
 
 if __name__ == "__main__":
     # run tessssts
+    test_baseline_model()
+    test_SpotPriceByRarityGBR()
     test_model_comparison()
+
+    model_gauntlet()
+
 

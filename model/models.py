@@ -8,7 +8,7 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 
 from sklearn.linear_model import LinearRegression
-from sklearn.base import BaseEstimator, TransformerMixin, RegressorMixin
+from sklearn.base import BaseEstimator, TransformerMixin, RegressorMixin, clone
 from sklearn.metrics import make_scorer, mean_squared_log_error
 from sklearn.pipeline import Pipeline
 from sklearn.ensemble import GradientBoostingRegressor
@@ -148,7 +148,7 @@ def rmlse(y_pred,y_test):
 def rmlse_scorer(estimator, X, y):
     y_pred = estimator.predict(X)
     log_diff = np.log(y_pred+1) - np.log(y+1)
-    return np.sqrt(np.mean(log_diff**2))
+    return -np.sqrt(np.mean(log_diff**2))
 
 def price_corrector(y_pred):
     y_pred = np.array(y_pred) 
@@ -199,26 +199,59 @@ def pipe_feature_imports(pipe):
     return pd.DataFrame(feature_importances[feature_importances[:,1].argsort()[::-1]], columns=['feature','importance'])
 
 # TODO NEED TO WRITE PROPER MODELS
-def run_model_against_baseline(model, cards_df, scorer, n_folds=5):
+def run_models_against_baseline(models, cards_df, scorer, n_folds=5):
     """
         Assumes cards_df has 'price' as y column 
+        models is list of [model, modelname]
     """
     # Formats csv into df, excludes sets, and  
     X, y = csv_cleaner(cards_df)
     
     # Cross-validate model & predict
+    score_dict = {}
+
     baseline = BaselineModel()
     base_scores = cross_val_score(baseline, X, y, cv=n_folds, verbose=2, scoring=scorer, n_jobs=-1)
-    my_scores = cross_val_score(model, X, y, cv=n_folds, verbose=2, scoring=scorer, n_jobs=-1)
-    print("baseline scores: \n{}".format(base_scores))
-    print("average: {}".format(np.mean(base_scores)))
-    print("my scores: \n{}".format(my_scores))
-    print("average: {}".format(np.mean(my_scores)))
 
-    # Unlog y_pred if applicable
+    for model, modelname in models:
+        my_scores = cross_val_score(model, X, y, cv=n_folds, verbose=2, scoring=scorer, n_jobs=-1)
+        score_dict[modelname] = my_scores
+
+    print("baseline scores: \n\t{}".format(base_scores))
+    print("baseline average: \n\t{}".format(np.mean(base_scores)))
+
+    for modelname, scores in score_dict.items():
+        print("{MODEL} scores: \n\t{SCORES}".format(MODEL=modelname, SCORES=scores))
+        print("{MODEL} average: \n\t{SCORES}".format(MODEL=modelname, SCORES=np.mean(scores)))
+
     # Format & plot results
+    return score_dict
+
+def model_gauntlet():
+    cards_df = combine_csv_rarities()
+    scorer = rmlse_scorer
+
+    model_a = SpotPriceGBR()
+    modelname_a = "SpotPriceGBR"
+    pipe_a = create_pipeline(model_a, modelname_a)
+
+    model_a1 = SpotPriceGBR(log_y=True)
+    modelname_a1 = "SpotPriceGBR_log"
+    pipe_a1 = create_pipeline(model_a1, modelname_a1)
+
+    model_b = SpotPriceByRarityGBR()
+    modelname_b = "SpotPriceByRarityGBR"
+    pipe_b = create_pipeline(model_b, modelname_b)
     
-    pass
+    model_b1 = SpotPriceByRarityGBR(log_y=True)
+    modelname_b1 = "SpotPriceByRarityGBR_log"
+    pipe_b1 = create_pipeline(model_b, modelname_b)
+
+    run_models_against_baseline([[pipe_a, modelname_a],
+                                 [pipe_a1, modelname_a1],
+                                 [pipe_b, modelname_b],
+                                 [pipe_b1, modelname_b1]], 
+                                 cards_df, scorer, n_folds=10)
 
 def GBR_V1():
     pipe = Pipeline([
@@ -234,6 +267,23 @@ def GBR_V1():
         ('DropFeatures', DropFeaturesTransformer()),
         ('TestFill', TestFillTransformer()),
         ('SpotPriceGBR', SpotPriceGBR())
+    ])
+    return pipe
+
+def create_pipeline(model, modelname):
+    pipe = Pipeline([
+        ('BoolToInt', BoolTransformer()),
+        ('CreatureFeature', CreatureFeatureTransformer()),
+        ('Planeswalker', PlaneswalkerTransformer()),
+        ('AbilityCounts', AbilityCountsTransformer()),
+        ('Fillna', FillTransformer()),
+        ('CostIntensity', CostIntensityTransformer()),
+        ('CreateDummies', CreateDummiesTransformer()),
+        ('DummifyType', TypelineTransformer()),
+        ('DummifyColorID', ColorIDTransformer()),
+        ('DropFeatures', DropFeaturesTransformer()),
+        ('TestFill', TestFillTransformer()),
+        (modelname, model)
     ])
     return pipe
 
@@ -265,7 +315,7 @@ class BaselineModel(BaseEstimator, RegressorMixin):
             if rarity in self.rarity_averages_.keys():
                 y_pred[test_mask] = self.rarity_averages_[rarity]
             else:
-                y_pred[test_mask] = 1
+                y_pred[test_mask] = self.rarity_averages_.values().next()
         
         return y_pred
 
@@ -277,17 +327,28 @@ class BaselineModel(BaseEstimator, RegressorMixin):
 # TODO custom scorer, predict floor
 class SpotPriceGBR(BaseEstimator, RegressorMixin):
     """ Model using only recent prices (done already; need to formalize)"""
-    def __init__(self, model=GradientBoostingRegressor(), base_weight=0):
+    def __init__(self, model=GradientBoostingRegressor(), base_weight=0, log_y=False):
         self.base_weight = base_weight
         self.model = model
+        self.log_y = log_y
 
-    def fit(self, X, y):
+    def fit(self, X_train, y_train):
+        X = X_train.copy()
+        y = y_train.copy()
+
+        if self.log_y:
+            y = np.log(y)
+
         self.model.fit(X, y)
         return self
 
     def predict(self, X):
         """ Set floor to GBR predictions """
         y_pred = self.model.predict(X)
+
+        if self.log_y:
+            y_pred = np.exp(y_pred)
+
         y_pred[y_pred<0.1]=0.1
         return y_pred
 
@@ -298,16 +359,26 @@ class SpotPriceGBR(BaseEstimator, RegressorMixin):
 
 class SpotPriceByRarityGBR(BaseEstimator, RegressorMixin):
     """ Model using only recent prices, fitting models by rarity"""
-    def __init__(self, model=GradientBoostingRegressor(), base_weight=0, log_y=False):
+    def __init__(self, model=GradientBoostingRegressor(), base_weight=0,
+                 log_y=False, rarities=['mythic', 'rare', 'uncommon', 'common']):
         self.base_weight = base_weight
         self.model = model
         self.log_y = log_y
+        self.rarities = rarities
         self.rarity_models_ = {}
 
-    def fit(self, X, y):
-        for rarity in X['rarity'].unique():
-            train_mask = X['rarity']==rarity
-            rarity_model = model.copy()
+    def fit(self, X_train, y_train):
+        X = X_train.copy()
+        y = y_train.copy()
+
+        if self.log_y:
+            y = np.log(y)
+        
+        self.train_rarities_ = [x for x in X.columns if x.startswith('rarity_')]
+
+        for rarity in self.train_rarities_:
+            train_mask = X[rarity]==1
+            rarity_model = clone(self.model)
             rarity_model.fit(X[train_mask], y[train_mask])
             self.rarity_models_[rarity] = rarity_model
         
@@ -322,12 +393,15 @@ class SpotPriceByRarityGBR(BaseEstimator, RegressorMixin):
 
         y_pred = np.ones(X.shape[0])
 
-        for rarity in X['rarity'].unique():
-            test_mask = X['rarity']==rarity
-            if rarity in self.rarity_models_.keys():
+        test_rarities = [x for x in X.columns if x.startswith('rarity_')]
+
+        for rarity in test_rarities:
+            test_mask = X[rarity]==1
+            
+            if (rarity in self.train_rarities_) and (rarity in self.rarity_models_.keys()):    
                 y_pred[test_mask] = self.rarity_models_[rarity].predict(X[test_mask])
             else:
-                y_pred[test_mask] = 1
+                y_pred[test_mask] = self.rarity_models_.values().next().predict(X[test_mask])
         
         if self.log_y:
             y_pred = np.exp(y_pred)
@@ -339,7 +413,6 @@ class SpotPriceByRarityGBR(BaseEstimator, RegressorMixin):
         """ Use RMLSE; Root Mean Log Squared Error. Score is -RMLSE, because bigger is better"""
         y_pred = self.predict(X)
         return -rmlse(y_pred, y)
-
 
 class StandardNormalizerModel(BaseEstimator, RegressorMixin):
     """Model using only recent prices (done already; need to formalize"""
