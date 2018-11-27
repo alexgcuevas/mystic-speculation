@@ -541,10 +541,12 @@ class PriceToPowerTransformer(BaseEstimator, TransformerMixin):
         """ calculates average price by rarity of cards, averages over seasons, loads into attribute. Requires 'rarity' column """
         self.rarity_scaler_ = self.rarity_baseline.copy()
         seasonal_prices_df = X.copy()
+        seasons = self._get_seasons(seasonal_prices_df)
+
         for rarity in self.rarity_baseline.keys():
             rare_mask = seasonal_prices_df['rarity']==rarity
             if rare_mask:
-                rare_mean = seasonal_prices_df[rare_mask].mean()
+                rare_mean = seasonal_prices_df[rare_mask][seasons].mean()
                 for avg_price in rare_mean:
                     self.rarity_scaler_[rarity] = np.mean(self.rarity_scaler_[rarity], avg_price) 
 

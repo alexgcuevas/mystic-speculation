@@ -430,6 +430,7 @@ class StandardNormalizerGBR(BaseEstimator, RegressorMixin):
         self.log_y = log_y
         self.rarities = rarities
         self.std_sets_df = std_sets_df
+        self.standard_price_xfmr = StandardPriceTransformer(self.std_sets_df)
 
     def _drop_seasons(self, df):
         """ Returns df with season features dropped. Used after getting season attrs, before fitting X """
@@ -473,25 +474,20 @@ class StandardNormalizerGBR(BaseEstimator, RegressorMixin):
         y_price = y_train.copy()
 
         # get standard prices
-        spt = StandardPriceTransformer(self.std_sets_df)
-        std_prices_df = spt.transform(X)
+        std_prices_df = self.standard_price_xfmr.transform(X)
         
         # Transform prices to power
+        self.ptpt_ = PriceToPowerTransformer()
+        y_power = self.ptpt_.fit_transform(std_prices_df, y_price)
 
-        y_price = 
+        # log if applicable
         if self.log_y:
-            for key, value in self.rarity_baseline.items():
-                self.rarity_baseline[key] = np.log(value)
-            y = np.log(y)
+            y_power = np.log(y_power)
         
-        self.train_rarities_ = [x for x in X.columns if x.startswith('rarity_')]
+        # drop seasonal price features and fit GBR
+        X = self._drop_seasons(X)
+        self.model.fit(X, y_power)
 
-        for rarity in self.train_rarities_:
-            train_mask = X[rarity]==1
-            rarity_model = clone(self.model)
-            rarity_model.fit(X[train_mask], y[train_mask])
-            self.rarity_models_[rarity] = rarity_model
-        
         return self
 
     def predict(self, X):
