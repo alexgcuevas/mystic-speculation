@@ -52,7 +52,7 @@ def fit_basic_pipeline(X_train, X_test, y_train, y_test):
         ('CreatureFeature', CreatureFeatureTransformer()),
         ('Planeswalker', PlaneswalkerTransformer()),
         ('BoolToInt', BoolTransformer()),
-        ('Fillna', FillTransformer()),
+        ('Fillna', FillnaTransformer()),
         ('CostIntensity', CostIntensityTransformer()),
         ('DropFeatures', DropFeaturesTransformer()),
         ('CreateDummies', CreateDummiesTransformer()),
@@ -159,7 +159,7 @@ def fit_refine_pipeline(X_train, X_test, y_train, y_test):
         ('CreatureFeature', CreatureFeatureTransformer()),
         ('Planeswalker', PlaneswalkerTransformer()),
         ('AbilityCounts', AbilityCountsTransformer()),
-        ('Fillna', FillTransformer()),
+        ('Fillna', FillnaTransformer()),
         ('CostIntensity', CostIntensityTransformer()),
         ('CreateDummies', CreateDummiesTransformer()),
         ('DummifyType', TypelineTransformer()),
@@ -276,7 +276,7 @@ def create_pipeline(model, modelname):
         ('CreatureFeature', CreatureFeatureTransformer()),
         ('Planeswalker', PlaneswalkerTransformer()),
         ('AbilityCounts', AbilityCountsTransformer()),
-        ('Fillna', FillTransformer()),
+        ('Fillna', FillnaTransformer()),
         ('CostIntensity', CostIntensityTransformer()),
         ('CreateDummies', CreateDummiesTransformer()),
         ('DummifyType', TypelineTransformer()),
@@ -289,11 +289,12 @@ def create_pipeline(model, modelname):
 
 class BaselineModel(BaseEstimator, RegressorMixin):
     """Baseline Model to evaluate mine against"""
-    def __init__(self):
-        self.rarity_averages_ = {}
+    def __init__(self,rarity_baseline={'mythic':10,'rare':1.5,'uncommon':0.5,'common':0.2}):
+        self.rarity_baseline = rarity_baseline
 
     def fit(self, X, y):
         # Store average prices by rarity for training data
+        self.rarity_averages_ = {}
         for rarity in X['rarity'].unique():
             train_mask = X['rarity']==rarity
             self.rarity_averages_[rarity] = y[train_mask].mean()
@@ -314,10 +315,8 @@ class BaselineModel(BaseEstimator, RegressorMixin):
             test_mask = X['rarity']==rarity
             if rarity in self.rarity_averages_.keys():
                 y_pred[test_mask] = self.rarity_averages_[rarity]
-            elif rarity == 'mythic':
-                y_pred[test_mask] = self.rarity_averages_['rare']
             else:
-                y_pred[test_mask] = self.rarity_averages_['uncommon']
+                y_pred[test_mask] = self.rarity_baseline[rarity]
         return y_pred
 
     def score(self, X, y):
@@ -469,9 +468,7 @@ class StandardNormalizerGBR(BaseEstimator, RegressorMixin):
 
         # get standard prices
         print("Getting standard prices")
-        print(X.sample(10))
         std_prices_df = self.std_price_xfmr_.transform(X)
-        print(std_prices_df.sample(10))
 
         # predict standard market size for next season and save as attribute
         print("Predicting market size")

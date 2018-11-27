@@ -543,21 +543,20 @@ class StandardSeasonTransformer(BaseEstimator, TransformerMixin):
 
         return Xt
 
+def get_seasons(df):
+    seasons = [x for x in df.columns if x.strip('s').isnumeric()]
+    return seasons
+
 class PriceToPowerTransformer(BaseEstimator, TransformerMixin):
     """ Transforms price to power by scaling according to rarity, based on observed trends """
     def __init__(self, rarity_baseline={'mythic':10,'rare':1.5,'uncommon':0.5,'common':0.2}):
         self.rarity_baseline = rarity_baseline
 
-    def _get_seasons(self, df):
-        """ finds seasons in columns of df and returns list of them """
-        seasons = [x for x in df.columns if x.strip('s').isnumeric()] 
-        return seasons
-
     def fit(self, X, y=None):
         """ calculates average price by rarity of cards, averages over seasons, loads into attribute. Requires 'rarity' column """
         self.rarity_scaler_ = self.rarity_baseline.copy()
         seasonal_prices_df = X.copy()
-        seasons = self._get_seasons(seasonal_prices_df)
+        seasons = get_seasons(seasonal_prices_df)
         for rarity in self.rarity_baseline.keys():
             rare_mask = seasonal_prices_df['rarity']==rarity
             if rare_mask.sum():

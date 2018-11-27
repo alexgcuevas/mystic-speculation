@@ -120,19 +120,18 @@ def test_standard_normalizer():
     print("Cleaning X and Y")
     X_train, y_train = csv_cleaner(X, y_col='s24')
 
-
     pipe = Pipeline([
         ('BoolToInt', BoolTransformer()),
         ('CreatureFeature', CreatureFeatureTransformer()),
         ('Planeswalker', PlaneswalkerTransformer()),
-        # ('AbilityCounts', AbilityCountsTransformer()),
+        ('AbilityCounts', AbilityCountsTransformer()),
         ('Fillna', FillnaTransformer()),
-        # ('CostIntensity', CostIntensityTransformer()),
-        # ('DummifyType', TypelineTransformer()),
-        # ('DummifyColorID', ColorIDTransformer()),
+        ('CostIntensity', CostIntensityTransformer()),
+        ('DummifyType', TypelineTransformer()),
+        ('DummifyColorID', ColorIDTransformer()),
         ('DropFeatures', DropFeaturesTransformer()),
         ('TestFill', TestFillTransformer()),
-        ('StandardNormalizerGBR', StandardNormalizerGBR(std_sets_df = std_sets))
+        ('StandardNormalizerGBR', StandardNormalizerGBR(std_sets_df = std_sets, log_y=True))
     ])
     
     print("Fitting pipeline")
@@ -140,6 +139,81 @@ def test_standard_normalizer():
 
     print("Scoring model on Ixalan")
     print(pipe.score(X_test,y_test))
+
+    return pipe
+
+def test_Ixalan_baseline():
+    baseline = BaselineModel()
+    df = join_features_seasonal_prices()
+    X, y = csv_cleaner(df,y_col=['s24','s25'])
+    
+    seasons = get_seasons(X)
+    ix_mask = X['setname']=="Ixalan"
+    y_train = y['s24'][~ix_mask]
+    y_test = y['s25'][ix_mask]
+    X_train = X[~ix_mask].drop(columns=seasons)
+    X_test = X[ix_mask].drop(columns=seasons)
+
+    baseline.fit(X_train, y_train)
+    print("Baseline score on Ixalan: \n", baseline.score(X_test,y_test))
+
+    return baseline
+
+def plot_Ixalan_model_baseline():
+    """ Predicts Ixalan Prices for season 25 using SN-GBR, comparing to baseline""" 
+    df = join_features_seasonal_prices()
+    X, y = csv_cleaner(df,y_col=['s24','s25'])
+
+    # Drop sets after Ixalan - cheating to count them!
+    X = X[X['setname']!="Dominaria"]
+    X = X[X['setname']!="Rivals of Ixalan"]
+    
+    # Setting Ixalan as test set
+    ix_mask = X['setname']=="Ixalan"
+    y_train = y['s24'][~ix_mask]
+    y_test = y['s25'][ix_mask]
+    X_train = X[~ix_mask]
+    X_test = X[ix_mask]
+
+    print("Getting standard format for pipeline")
+    std_sets, std_dates = get_standard_format()
+
+    print("Setting up models")
+    pipe = Pipeline([
+        ('BoolToInt', BoolTransformer()),
+        ('CreatureFeature', CreatureFeatureTransformer()),
+        ('Planeswalker', PlaneswalkerTransformer()),
+        ('AbilityCounts', AbilityCountsTransformer()),
+        ('Fillna', FillnaTransformer()),
+        ('CostIntensity', CostIntensityTransformer()),
+        ('DummifyType', TypelineTransformer()),
+        ('DummifyColorID', ColorIDTransformer()),
+        ('DropFeatures', DropFeaturesTransformer()),
+        ('TestFill', TestFillTransformer()),
+        ('StandardNormalizerGBR', StandardNormalizerGBR(std_sets_df = std_sets, log_y=True))
+    ])
+    # Drop seasons for baseline 
+    seasons = get_seasons(X)
+    baseline = BaselineModel()
+
+    print("Fitting Baseline Model")
+    baseline.fit(X_train.drop(columns=get_seasons(X_train)), y_train)
+    print("Baseline score on Ixalan:")
+    print(baseline.score(X_test.drop(columns=get_seasons(X_test)),y_test))
+
+    print("Fitting SN-GBR pipeline")
+    pipe.fit(X_train.drop(columns=['s25','s26','s27','s28']), y_train)
+    print("SN-GBR scor on Ixalan:")
+    print(pipe.score(X_test.drop(columns=['s25','s26','s27','s28']),y_test))
+    
+    y_pred = baseline.predict(X_test.drop(columns=get_seasons(X_test)))
+    baseline_df = format_results(X_test.drop(columns=get_seasons(X_test)), y_pred, y_test)
+    y_pred = pipe.predict(X_test.drop(columns=['s25','s26','s27','s28']))
+    results_df = format_results(X_test.drop(columns=get_seasons(X_test)), y_pred, y_test)
+
+    plot_residuals_vs_baseline(results_df, baseline_df, title)
+
+    print("SN-GBR feature importances: \n", pipe_feature_imports(pipe))
 
 if __name__ == "__main__":
     # run tessssts
@@ -149,6 +223,7 @@ if __name__ == "__main__":
 
     # cards_df = combine_csv_rarities()
     # model_gauntlet(cards_df)
-    test_standard_normalizer()
+    # test_Ixalan_baseline()
+    # test_standard_normalizer()
 
-
+    plot_Ixalan_model_baseline():
