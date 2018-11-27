@@ -541,7 +541,6 @@ class PriceToPowerTransformer(BaseEstimator, TransformerMixin):
         """ calculates average price by rarity of cards, averages over seasons, loads into attribute. Requires 'rarity' column """
         self.rarity_scaler_ = self.rarity_baseline.copy()
         seasonal_prices_df = X.copy()
-        seasons = self._get_seasons(seasonal_prices_df)
         for rarity in self.rarity_baseline.keys():
             rare_mask = seasonal_prices_df['rarity']==rarity
             if rare_mask:
@@ -568,7 +567,7 @@ class PriceToPowerTransformer(BaseEstimator, TransformerMixin):
     def inverse_transform(self, X, y_power):
         """ transforms power back into price """
         rarity_df = X.copy()
-        y_price = np.ones(y_price.shape[0])
+        y_price = np.ones(y_power.shape[0])
 
         for rarity in self.rarity_baseline.keys():
             rare_mask = rarity_df['rarity']==rarity
@@ -587,3 +586,22 @@ class PriceToPowerTransformer(BaseEstimator, TransformerMixin):
 
         return y_power
 
+class StandardPriceTransformer(BaseEstimator, TransformerMixin):
+    """ Performs standard price masking on input df """
+    def __init__(self, std_sets_df):
+        """ std_sets_df is a dataframe with sets as the indices and seasons as the colums """
+        self.std_sets_df = std_sets_df
+        self.seasons_ = std_sets_df.columns
+    
+    def fit(self, X, y=None):
+        return self
+
+    def _standard_mask(self, row):
+        for season in self.seasons_:
+            row[season] = row[season]*self.std_sets_df.loc(row['setname'])[season]
+        return row
+
+    def transform(self, X, y=None):
+        """ X is seasonal prices, to be filtered for standard only """
+        seasonal_prices_df = X.copy()
+        return seasonal_prices_df.apply(self._standard_mask, axis=1)

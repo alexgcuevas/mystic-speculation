@@ -424,45 +424,28 @@ class StandardNormalizerGBR(BaseEstimator, RegressorMixin):
     """ Uses price history of rarities across standard season to normalize power """
     def __init__(self, model=GradientBoostingRegressor(), base_weight=0,
                  log_y=False, rarities=['mythic', 'rare', 'uncommon', 'common'],
-                 rarity_baseline={'mythic':10,'rare':1.5,'uncommon':0.5,'common':0.2}):
+                 std_sets_df=None):
         self.base_weight = base_weight
         self.model = model
         self.log_y = log_y
         self.rarities = rarities
-        self.rarity_baseline = rarity_baseline
-        self.rarity_models_ = {}
-
-    def _get_seasons(self, df):
-        """ finds seasons in columns of df and returns list of them """
-        seasons = [x for x in df.columns if x.strip('s').isnumeric()] 
-        return seasons
-    
+        self.std_sets_df = std_sets_df
 
     def _drop_seasons(self, df):
         """ Returns df with season features dropped. Used after getting season attrs, before fitting X """
-        seasons = self._get_seasons(df)
+        seasons = list(self.std_sets_df.columns)
         return df.drop(columns=seasons)
 
-    def _get_standard_prices(self, seasonal_prices_df, std_sets_df):
-        """ Takes in seasonal price dataframe and standard set legality, returns prices of cards in standard """ 
-        seasons = std_sets_df.columns
-        def standard_mask(row):
-            for season in seasons:
-                row[season] = row[season]*std_sets_df.loc(row['setname'])[season]
-            return row
-
-        return seasonal_prices_df.apply(standard_mask, axis=1)
-
-    def _predict_standard_market(self, std_prices_df, std_sets_df, next_sets):
+    def _predict_next_standard_market(self, std_prices_df, next_sets):
         """ Fits linear regression to standard market trend to predict size at next season, given standard legal set count """
         # x variables: season num, sin(num sets), interaction 
-        seasons = std_sets_df.shape[1]
+        seasons = list(self.std_sets_df.columns)
 
         X_train = pd.DataFrame()
-        X_train['set_count'] = std_sets_df.sum().reset_index(drop=True)
-        X_train['season'] = X.index + 1
+        X_train['set_count'] = self.std_sets_df.sum().reset_index(drop=True)
+        X_train['season'] = X_train.index + 1
 
-        y_train = std_prices_df.drop(columns=['cardname','setname']).sum()
+        y_train = std_prices_df[seasons].sum()
 
         std_xfmr = StandardSeasonTransformer()
         X_train_prime = std_xfmr.transform(X_train)
@@ -470,15 +453,15 @@ class StandardNormalizerGBR(BaseEstimator, RegressorMixin):
         lr = LinearRegression()
         lr.fit(X_train_prime, y_train)
 
-        X_test = pd.DataFrame({'set_count':[next_sets], 'season':[seasons+1]})
+        X_test = pd.DataFrame({'set_count':[next_sets], 'season':[len(seasons)+1]})
         X_test_prime = std_xfmr.transform(X_test)
 
         y_pred = lr.predict(X_test_prime)
         return y_pred
 
-    
     def _season_attrs(self):
         """ Calculates, sets attributes to scale y during fitting process """
+        spt = StandardPriceTransformer(self.std_sets_df)
         ptpt = PriceToPowerTransformer()
         ptpt.fit(y)
         self.price_transformer_ = ptpt
@@ -487,8 +470,15 @@ class StandardNormalizerGBR(BaseEstimator, RegressorMixin):
 
     def fit(self, X_train, y_train):
         X = X_train.copy()
-        y = y_train.copy()
+        y_price = y_train.copy()
 
+        # get standard prices
+        spt = StandardPriceTransformer(self.std_sets_df)
+        std_prices_df = spt.transform(X)
+        
+        # Transform prices to power
+
+        y_price = 
         if self.log_y:
             for key, value in self.rarity_baseline.items():
                 self.rarity_baseline[key] = np.log(value)
@@ -513,16 +503,7 @@ class StandardNormalizerGBR(BaseEstimator, RegressorMixin):
 
         y_pred = np.ones(X.shape[0])
 
-        test_rarities = [x for x in X.columns if x.startswith('rarity_')]
 
-        for rarity in test_rarities:
-            test_mask = X[rarity]==1
-            if test_mask.sum():
-                # If we have a rarity model, fit it; otherwise, use baseline assumption from init 
-                try:
-                    y_pred[test_mask] = self.rarity_models_[rarity].predict(X[test_mask])
-                except:        
-                    y_pred[test_mask] = self.rarity_baseline[rarity]
 
         if self.log_y:
             y_pred = np.exp(y_pred)
