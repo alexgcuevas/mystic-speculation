@@ -133,7 +133,7 @@ class FillnaTransformer(BaseEstimator, TransformerMixin):
         df = X.copy()
         # only fill non-seasonal columns
         seasons = self._get_seasons(df)
-        non_seasons = set(df.columns) - set(seasons)
+        non_seasons = list(set(df.columns) - set(seasons))
         df[non_seasons] = df[non_seasons].fillna(self.fill_value, axis=1)
         return df
 
@@ -615,8 +615,11 @@ class StandardPriceTransformer(BaseEstimator, TransformerMixin):
         return self
 
     def _standard_mask(self, row):
+        print("seasons: {}".format(self.seasons_))
+        print("std sets columns: {}".format(self.std_sets_df.columns))
         for season in self.seasons_:
-            row[season] = row[season]*self.std_sets_df.loc(row['setname'])[season]
+            print("season: {}".format(season))
+            row[season] = row[season]*self.std_sets_df.loc[row['setname']][season]
         return row
 
     def transform(self, X, y=None):
