@@ -447,7 +447,7 @@ class StandardNormalizerGBR(BaseEstimator, RegressorMixin):
         X_train['set_count'] = self.std_sets_df.sum().reset_index(drop=True)
         X_train['season'] = X_train.index + 1
 
-        y_train = self.std_prices_df[seasons].sum()
+        y_train = std_prices_df[seasons].sum()
 
         std_xfmr = StandardSeasonTransformer()
         X_train_prime = std_xfmr.transform(X_train)

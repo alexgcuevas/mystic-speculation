@@ -241,7 +241,8 @@ class DropFeaturesTransformer(BaseEstimator, TransformerMixin):
 
     def transform(self, X):
         """'Return DataFrame containing only the configured features."""
-        df = X.drop(self.features_to_drop, axis=1)
+        features = set(self.features_to_drop) and set(X.columns)
+        df = X.drop(features, axis=1)
         return df
 
 def csv_cleaner(df, y_col='price'):
@@ -281,7 +282,7 @@ class SetExclusionTransformer(BaseEstimator, TransformerMixin):
                 'Prerelease Events',
                 'Release Events',
                 'Rivals of Ixalan',
-                                
+
                 # 'Commander 2013',
                 # 'Commander 2014',
                 # 'Commander 2015',
@@ -367,7 +368,7 @@ class TypelineTransformer(BaseEstimator, TransformerMixin):
         return self
 
     def transform(self, X):
-        """Drops unnamed column & duplicates, and sets id as index"""
+        """Creates type dummies for main types"""
         df = X.copy()
 
         def type_sets(row):
