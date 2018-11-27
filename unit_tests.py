@@ -104,16 +104,22 @@ def test_standard_normalizer():
     std_sets, std_dates = get_standard_format()
     
     print("Getting seasonal prices df")
-    seasonal_prices_df = join_features_seasonal_prices()
-    clean_X, y_train = csv_cleaner(seasonal_prices_df, y_col='s24')
+    X = join_features_seasonal_prices()
 
-    print("Cleaning X and Y")
-    y_test = clean_X['s25']
-    X = clean_X.drop(columns=['s25','s26','s27','s28'])
+    # Setting Ixalan as test set
+    X_test = X[X['setname']=="Ixalan"]
+    y_test = X_test['s25']
 
-    X = X[X['setname']!="Ixalan"]
-    X = X[X['setname']!="Rivals of Ixalan"]
+    # Killing stuff after Ixalan
     X = X[X['setname']!="Dominaria"]
+    X = X[X['setname']!="Rivals of Ixalan"]
+    X = X[X['setname']!="Ixalan"]
+    X.drop(columns=['s25','s26','s27','s28'], inplace=True)
+
+    # Performing set exclusion transformation to get final training data
+    print("Cleaning X and Y")
+    X_train, y_train = csv_cleaner(X, y_col='s24')
+
 
     pipe = Pipeline([
         ('BoolToInt', BoolTransformer()),
@@ -130,9 +136,10 @@ def test_standard_normalizer():
     ])
     
     print("Fitting pipeline")
-    pipe.fit(X, y_train)
+    pipe.fit(X_train, y_train)
+    
     print("Scoring model on Ixalan")
-    print(pipe.score(clean_X[clean_X['setname']=="Ixalan"],y_test))
+    print(pipe.score(X_test,y_test))
 
 if __name__ == "__main__":
     # run tessssts

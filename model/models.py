@@ -442,7 +442,7 @@ class StandardNormalizerGBR(BaseEstimator, RegressorMixin):
         """ Fits linear regression to standard market trend to predict size at next season, given standard legal set count """
         # x variables: season num, sin(num sets), interaction 
         seasons = list(self.std_sets_df.columns)
-        print("std_prices_df columns: {}".format(std_prices_df.columns))
+
         X_train = pd.DataFrame()
         X_train['set_count'] = self.std_sets_df.sum().reset_index(drop=True)
         X_train['season'] = X_train.index + 1
@@ -468,12 +468,14 @@ class StandardNormalizerGBR(BaseEstimator, RegressorMixin):
 
         # get standard prices
         print("Getting standard prices")
-        print(X.head())
+        print(X.sample(10))
         std_prices_df = self.std_price_xfmr_.transform(X)
-        print(std_prices_df.head())
+        print(std_prices_df.sample(10))
+
         # predict standard market size for next season and save as attribute
         print("Predicting market size")
         self.pred_market_size_ = self._predict_next_standard_market(std_prices_df)
+        print("predicted market size: {}".format(self.pred_market_size_))
 
         # Transform prices to power
         print("Transforming Price to Power")
@@ -488,7 +490,7 @@ class StandardNormalizerGBR(BaseEstimator, RegressorMixin):
         # drop seasonal price features & set, and fit GBR
         print("Dropping seasonal price features and fitting GBR")
         X = self._drop_seasons(X)
-        X.drop(columns='setname', inplace=True)
+        X.drop(columns=['setname','rarity'], inplace=True)
         self.model.fit(X, y_power)
         
         print("Done fitting GBR")

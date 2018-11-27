@@ -561,37 +561,41 @@ class PriceToPowerTransformer(BaseEstimator, TransformerMixin):
 
         for rarity in self.rarity_baseline.keys():
             rare_mask = seasonal_prices_df['rarity']==rarity
-            if rare_mask:
+            if rare_mask.sum():
                 rare_mean = seasonal_prices_df[rare_mask][seasons].mean()
                 for avg_price in rare_mean:
-                    self.rarity_scaler_[rarity] = np.mean(self.rarity_scaler_[rarity], avg_price) 
+                    self.rarity_scaler_[rarity] = (self.rarity_scaler_[rarity] + avg_price)/2 
 
         return self
 
     def transform(self, X, y_price):
         """ transforms price in dollars into unitless power metric (pegged to avg mythic price) """
         rarity_df = X.copy()
-        y_power = np.ones(y_price.shape[0])
+        y_power = np.ones(y_price.shape)
+
+        print("price:", y_price.shape)
+        print("power:", y_power.shape)
+        print("rarity:", rarity_df.shape)
 
         for rarity in self.rarity_baseline.keys():
             rare_mask = rarity_df['rarity']==rarity
-            if rare_mask:
+            if rare_mask.sum():
                 # Scales to mean mythic rare price
                 ratio = self.rarity_scaler_['mythic']/self.rarity_scaler_[rarity]
-                y_power[rare_mask] = ratio*y_price[rare_mask]
+                y_power[rare_mask] = y_price[rare_mask]*ratio
 
         return y_power
 
     def inverse_transform(self, X, y_power):
         """ transforms power back into price """
         rarity_df = X.copy()
-        y_price = np.ones(y_power.shape[0])
+        y_price = np.ones(y_power.shape)
 
         for rarity in self.rarity_baseline.keys():
             rare_mask = rarity_df['rarity']==rarity
-            if rare_mask:
-                ratio = self.rarity_scaler_[rarity]/self.rarity_scaler_['mythic']
-                y_price[rare_mask] = ratio*y_power[rare_mask]
+            if rare_mask.sum():
+                ratio = self.rarity_scaler_['mythic']/self.rarity_scaler_[rarity]
+                y_price[rare_mask] = y_power[rare_mask]/ratio
 
         return y_price
 
@@ -615,10 +619,7 @@ class StandardPriceTransformer(BaseEstimator, TransformerMixin):
         return self
 
     def _standard_mask(self, row):
-        print("seasons: {}".format(self.seasons_))
-        print("std sets columns: {}".format(self.std_sets_df.columns))
         for season in self.seasons_:
-            print("season: {}".format(season))
             row[season] = row[season]*self.std_sets_df.loc[row['setname']][season]
         return row
 
