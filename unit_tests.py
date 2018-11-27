@@ -96,13 +96,33 @@ def test_model_comparison():
                                  [pipe_b1, modelname_b1]], 
                                  cards_df, scorer, n_folds=2)
 
+def test_standard_normalizer():
+    """ Predicts Ixalan Prices for season 25. Trains on season 24 prices """ 
+    scorer = rmlse_scorer
+    std_sets, std_dates = get_standard_format()
+    
+    seasonal_prices_df = join_features_seasonal_prices()
+    clean_X = csv_cleaner(seasonal_prices_df)
+
+    y_test = clean_X['s25']
+    y_train = clean_X['s24']
+    X = clean_X.drop(columns=['s24','s25','s26','s27','s28'])
+    X = X[X['setname']!="Ixalan"]
+    X = X[X['setname']!="Rivals of Ixalan"]
+    X = X[X['setname']!="Dominaria"]
+
+    model = StandardNormalizerGBR(std_sets_df = std_sets)
+    model.fit(X, y)
+    print(model.score(X_test,y_test))
+
 if __name__ == "__main__":
     # run tessssts
-    test_baseline_model()
-    test_SpotPriceByRarityGBR()
-    test_model_comparison()
+    # test_baseline_model()
+    # test_SpotPriceByRarityGBR()
+    # test_model_comparison()
 
-    cards_df = combine_csv_rarities()
-    model_gauntlet(cards_df)
+    # cards_df = combine_csv_rarities()
+    # model_gauntlet(cards_df)
+    test_standard_normalizer()
 
 

@@ -279,7 +279,9 @@ class SetExclusionTransformer(BaseEstimator, TransformerMixin):
                 'Starter 2000',
                 'Starter 1999',
                 'Prerelease Events',
-                'Release Events',                
+                'Release Events',
+                'Rivals of Ixalan',
+                                
                 # 'Commander 2013',
                 # 'Commander 2014',
                 # 'Commander 2015',
