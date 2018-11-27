@@ -110,16 +110,17 @@ def test_standard_normalizer():
     print("Cleaning X and Y")
     y_test = clean_X['s25']
     X = clean_X.drop(columns=['s25','s26','s27','s28'])
+
     X = X[X['setname']!="Ixalan"]
     X = X[X['setname']!="Rivals of Ixalan"]
     X = X[X['setname']!="Dominaria"]
-    
+
     pipe = Pipeline([
         ('BoolToInt', BoolTransformer()),
         ('CreatureFeature', CreatureFeatureTransformer()),
         ('Planeswalker', PlaneswalkerTransformer()),
         # ('AbilityCounts', AbilityCountsTransformer()),
-        ('Fillna', FillTransformer()),
+        ('Fillna', FillnaTransformer()),
         # ('CostIntensity', CostIntensityTransformer()),
         # ('DummifyType', TypelineTransformer()),
         # ('DummifyColorID', ColorIDTransformer()),

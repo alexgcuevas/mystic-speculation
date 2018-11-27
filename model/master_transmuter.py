@@ -110,14 +110,20 @@ class OneHotTransformer(BaseEstimator, TransformerMixin):
 
         return df[self.train_columns]
 
-class FillTransformer(BaseEstimator, TransformerMixin):
+class FillnaTransformer(BaseEstimator, TransformerMixin):
     """
     Impute NaN values
     # TODO: Parameterize so values can be imputed with -1, mean, median, or mode.
     """
+    def __init__(self, fill_value=0):
+        self.fill_value = fill_value
 
-    def fit(self, X, y=None):
-        self.fill_value = -1 # >>> DO I WANT THIS? 
+    def _get_seasons(self, df):
+        """ finds seasons in columns of df and returns list of them """
+        seasons = [x for x in df.columns if x.strip('s').isnumeric()] 
+        return seasons
+
+    def fit(self, X, y=None): 
         return self
 
     def transform(self, X):
@@ -125,7 +131,10 @@ class FillTransformer(BaseEstimator, TransformerMixin):
         # fill with -1
         # TODO: make this fill dynamic for all columns?
         df = X.copy()
-        df.fillna(self.fill_value, axis=1, inplace=True)
+        # only fill non-seasonal columns
+        seasons = self._get_seasons(df)
+        non_seasons = set(df.columns) - set(seasons)
+        df[non_seasons] = df[non_seasons].fillna(self.fill_value, axis=1)
         return df
 
 class CostIntensityTransformer(BaseEstimator, TransformerMixin):
@@ -231,7 +240,7 @@ class DropFeaturesTransformer(BaseEstimator, TransformerMixin):
     def __init__(self):
         self.features_to_drop = [
             'cardname'
-            ,'setname'
+            # ,'setname'
             ,'type_line'
             ,'mana_cost'
             ,'oracle_text'
@@ -243,6 +252,9 @@ class DropFeaturesTransformer(BaseEstimator, TransformerMixin):
             ,'card_types'
             ,'mod_types'
             ,'sub_types'
+            ,'l_type'
+            ,'pt_type'
+            ,'layout'
             # ,'price'
         ]
 
@@ -252,8 +264,8 @@ class DropFeaturesTransformer(BaseEstimator, TransformerMixin):
 
     def transform(self, X):
         """'Return DataFrame containing only the configured features."""
-        features = set(self.features_to_drop) and set(X.columns)
-        df = X.drop(features, axis=1)
+        cols = list(set(self.features_to_drop) & set(X.columns))
+        df = X.drop(columns=cols)
         return df
 
 class SetExclusionTransformer(BaseEstimator, TransformerMixin):
@@ -326,24 +338,24 @@ class CreateDummiesTransformer(BaseEstimator, TransformerMixin):
 
 class TestFillTransformer(BaseEstimator, TransformerMixin):
     """Fills unmatched columns in X_test with -1"""
-    def __init__(self):
-        self.fill_value = -1
+    def __init__(self, fill_value=-1):
+        self.fill_value = fill_value
 
     def fit(self, X, y=None):
         """Does not save state."""
-        self.train_columns = set(X.columns)
+        self.train_columns_ = set(X.columns)
         return self
 
     def transform(self, X):
         """Enlarges test columns to equal train size"""
         df = X.copy()
         # Fill columns in train but not test with fill value
-        missing = self.train_columns - set(X.columns)
+        missing = self.train_columns_ - set(X.columns)
         if missing:
             for column in missing:
                 df[column] = self.fill_value
         # drop columns in test but not in train
-        df = df[list(self.train_columns)]
+        df = df[list(self.train_columns_)]
         return df
 
 class TypelineTransformer(BaseEstimator, TransformerMixin):
