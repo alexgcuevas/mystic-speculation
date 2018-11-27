@@ -424,20 +424,21 @@ class StandardNormalizerGBR(BaseEstimator, RegressorMixin):
     """ Uses price history of rarities across standard season to normalize power """
     def __init__(self, model=GradientBoostingRegressor(), base_weight=0,
                  log_y=False, rarities=['mythic', 'rare', 'uncommon', 'common'],
-                 std_sets_df=None):
+                 std_sets_df=None, next_sets=5):
         self.base_weight = base_weight
         self.model = model
         self.log_y = log_y
         self.rarities = rarities
         self.std_sets_df = std_sets_df
-        self.standard_price_xfmr = StandardPriceTransformer(self.std_sets_df)
+        self.next_sets = next_sets
+        self.std_price_xfmr_ = StandardPriceTransformer(self.std_sets_df)
 
     def _drop_seasons(self, df):
         """ Returns df with season features dropped. Used after getting season attrs, before fitting X """
         seasons = list(self.std_sets_df.columns)
         return df.drop(columns=seasons)
 
-    def _predict_next_standard_market(self, std_prices_df, next_sets):
+    def _predict_next_standard_market(self, std_prices_df):
         """ Fits linear regression to standard market trend to predict size at next season, given standard legal set count """
         # x variables: season num, sin(num sets), interaction 
         seasons = list(self.std_sets_df.columns)
@@ -446,7 +447,7 @@ class StandardNormalizerGBR(BaseEstimator, RegressorMixin):
         X_train['set_count'] = self.std_sets_df.sum().reset_index(drop=True)
         X_train['season'] = X_train.index + 1
 
-        y_train = std_prices_df[seasons].sum()
+        y_train = self.std_prices_df[seasons].sum()
 
         std_xfmr = StandardSeasonTransformer()
         X_train_prime = std_xfmr.transform(X_train)
@@ -454,28 +455,22 @@ class StandardNormalizerGBR(BaseEstimator, RegressorMixin):
         lr = LinearRegression()
         lr.fit(X_train_prime, y_train)
 
-        X_test = pd.DataFrame({'set_count':[next_sets], 'season':[len(seasons)+1]})
+        X_test = pd.DataFrame({'set_count':[self.next_sets], 'season':[len(seasons)+1]})
         X_test_prime = std_xfmr.transform(X_test)
 
         y_pred = lr.predict(X_test_prime)
         return y_pred
-
-    def _season_attrs(self):
-        """ Calculates, sets attributes to scale y during fitting process """
-        spt = StandardPriceTransformer(self.std_sets_df)
-        ptpt = PriceToPowerTransformer()
-        ptpt.fit(y)
-        self.price_transformer_ = ptpt
-        ptpt.transform(y)
-        pass
 
     def fit(self, X_train, y_train):
         X = X_train.copy()
         y_price = y_train.copy()
 
         # get standard prices
-        std_prices_df = self.standard_price_xfmr.transform(X)
+        std_prices_df = self.std_price_xfmr_.transform(X)
         
+        # predict standard market size for next season and save as attribute
+        self.pred_market_size_ = self._predict_next_standard_market(std_prices_df)
+
         # Transform prices to power
         self.ptpt_ = PriceToPowerTransformer()
         y_power = self.ptpt_.fit_transform(std_prices_df, y_price)
@@ -491,22 +486,27 @@ class StandardNormalizerGBR(BaseEstimator, RegressorMixin):
         return self
 
     def predict(self, X):
-        """ Pick fitted GBR model by rarity """
-        try:
-            getattr(self, "rarity_models_")
-        except AttributeError:
-            raise RuntimeError("rarity_models_ doesn't exist; make sure you fit a model first")    
-
-        y_pred = np.ones(X.shape[0])
-
-
+        """ Predict from GBR and inverse transform log, power to price, and fit to market size before scoring """
+        
+        # Predict with model
+        y_pred_power = self.model.predict(X)
 
         if self.log_y:
-            y_pred = np.exp(y_pred)
+            y_pred_power = np.exp(y_pred_power)
+
+        # Convert back to price
+        y_pred_price = self.ptpt_.inverse_transform(X, y_pred_power)
+
+        # Norm preds to price
+        set_price = self.pred_market_size_ / self.next_sets
+        y_sum = y_pred_price.sum()
+        norm = set_price/y_sum
+        y_normed = y_pred_price*norm
 
         # Set floor to GBR predictions
-        y_pred[y_pred<0.1]=0.1
-        return y_pred
+        y_normed[y_normed<0.1]=0.1
+        
+        return y_normed
 
     def score(self, X, y):
         """ Use RMLSE; Root Mean Log Squared Error. Score is -RMLSE, because bigger is better"""
