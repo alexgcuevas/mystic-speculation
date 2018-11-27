@@ -1,8 +1,7 @@
+import re, math
 import numpy as np
 import pandas as pd
-import math
 import matplotlib.pyplot as plt
-import re
 from sklearn.pipeline import Pipeline
 from sklearn.base import BaseEstimator, TransformerMixin
 
@@ -13,7 +12,6 @@ from sklearn.feature_extraction.text import TfidfVectorizer
 
 # Silence outdated numpy warning
 import warnings
-
 warnings.filterwarnings(action="ignore", category=DeprecationWarning)
 
 
@@ -61,6 +59,10 @@ def csv_cleaner(df, y_col='price'):
     set_excluder = SetExclusionTransformer()
     clean_df = set_excluder.transform(clean_df)
     return clean_df.drop(columns=y_col, axis=1), clean_df[y_col]
+
+def get_seasons(df):
+    seasons = [x for x in df.columns if x.strip('s').isnumeric()]
+    return seasons
 
 
 class OneHotTransformer(BaseEstimator, TransformerMixin):
@@ -342,7 +344,6 @@ class TestFillTransformer(BaseEstimator, TransformerMixin):
         self.fill_value = fill_value
 
     def fit(self, X, y=None):
-        """Does not save state."""
         self.train_columns_ = set(X.columns)
         return self
 
@@ -473,62 +474,6 @@ class AbilityCountsTransformer(BaseEstimator, TransformerMixin):
 
         return df
 
-# TODO: This doesn't do anything right now
-class SeasonNormalizerTransformer(BaseEstimator, TransformerMixin):
-    """ Transforms seasonal price history into target """
-    def __init__(self, seasons=[]):
-        self.seasons = seasons
-
-    def fit(self, X, y=None):
-        """identifies all subtypes"""
-        # Cleave split cards and transforms
-        cards = [x.split('//') for x in X['type_line'].unique()]
-        for card in cards:
-            for subcard in card:
-                types = subcard.split(' — ')
-                self.mod_types.update(set(types[0].split()) - self.card_types)
-                try:
-                    self.sub_types.update(set(types[1].split()))
-                except:
-                    pass
-                    
-        return self
-
-    def transform(self, X):
-        """Drops unnamed column & duplicates, and sets id as index"""
-        df = X.copy()
-
-        def type_sets(row):
-            card_types = set()
-            sub_types = set()
-            mod_types = set()
-            card = row['type_line'].split('//')
-            for subcard in card:
-                types = subcard.split(' — ')
-                card_types.update(set(types[0].split()) & self.card_types)
-                mod_types.update(set(types[0].split()) - self.card_types)
-                try:
-                    sub_types.update(set(types[1].split()))
-                except:
-                    pass
-            row['card_types'] = card_types
-            row['mod_types'] = mod_types
-            row['sub_types'] = sub_types
-            return row
-
-        def type_dummies(row):
-            for card_type in self.card_types:
-                row[card_type] = 1*(card_type in row['card_types'])
-            for mod_type in self.mod_types:
-                row[mod_type] = 1*(mod_type in row['mod_types'])
-            return row
-
-        df = df.apply(type_sets, axis=1)
-        # Dummify card type membership, type_mod membership
-        df = df.apply(type_dummies, axis=1)
-
-        return df
-
 class StandardSeasonTransformer(BaseEstimator, TransformerMixin):
     """ Add features to season matrix """
     def fit(self, X, y=None):
@@ -542,10 +487,6 @@ class StandardSeasonTransformer(BaseEstimator, TransformerMixin):
         Xt['sin_set'] = np.sin(Xt['set_count'])
 
         return Xt
-
-def get_seasons(df):
-    seasons = [x for x in df.columns if x.strip('s').isnumeric()]
-    return seasons
 
 class PriceToPowerTransformer(BaseEstimator, TransformerMixin):
     """ Transforms price to power by scaling according to rarity, based on observed trends """
@@ -561,11 +502,9 @@ class PriceToPowerTransformer(BaseEstimator, TransformerMixin):
             rare_mask = seasonal_prices_df['rarity']==rarity
             if rare_mask.sum():
                 rare_mean = seasonal_prices_df[rare_mask][seasons].mean()
-                print("rare_mean:\n", rare_mean)
                 for avg_price in rare_mean:
                     if not pd.isnull(avg_price):
                         self.rarity_scaler_[rarity] = (self.rarity_scaler_[rarity]*3 + avg_price)/4 
-        print("rarity_scaler_ fit: \n:", self.rarity_scaler_)
         return self
 
     def transform(self, X, y_price):
