@@ -137,7 +137,7 @@ def test_standard_normalizer():
     
     print("Fitting pipeline")
     pipe.fit(X_train, y_train)
-    
+
     print("Scoring model on Ixalan")
     print(pipe.score(X_test,y_test))
 

@@ -3,6 +3,7 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
+from scipy import stats
 
 from sklearn.linear_model import LinearRegression
 from sklearn.base import BaseEstimator, TransformerMixin, RegressorMixin, clone
@@ -479,12 +480,13 @@ class StandardNormalizerGBR(BaseEstimator, RegressorMixin):
 
         # Transform prices to power
         print("Transforming Price to Power")
+        print("y_price describe: \n", stats.describe(y_price))
         self.ptpt_ = PriceToPowerTransformer()
         y_power = self.ptpt_.fit_transform(std_prices_df, y_price)
 
         # log if applicable
-        print("Logging y")
         if self.log_y:
+            print("Logging y")
             y_power = np.log(y_power)
         
         # drop seasonal price features & set, and fit GBR
@@ -499,10 +501,12 @@ class StandardNormalizerGBR(BaseEstimator, RegressorMixin):
 
     def predict(self, X):
         """ Predict from GBR and inverse transform log, power to price, and fit to market size before scoring """
-        
+        # Dropping columns the pipeline ignored
+        X = self._drop_seasons(X)
+
         # Predict with model
         print("Predicting power")
-        y_pred_power = self.model.predict(X)
+        y_pred_power = self.model.predict(X.drop(columns=['setname','rarity']))
 
         if self.log_y:
             y_pred_power = np.exp(y_pred_power)

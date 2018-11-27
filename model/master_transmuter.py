@@ -558,24 +558,21 @@ class PriceToPowerTransformer(BaseEstimator, TransformerMixin):
         self.rarity_scaler_ = self.rarity_baseline.copy()
         seasonal_prices_df = X.copy()
         seasons = self._get_seasons(seasonal_prices_df)
-
         for rarity in self.rarity_baseline.keys():
             rare_mask = seasonal_prices_df['rarity']==rarity
             if rare_mask.sum():
                 rare_mean = seasonal_prices_df[rare_mask][seasons].mean()
+                print("rare_mean:\n", rare_mean)
                 for avg_price in rare_mean:
-                    self.rarity_scaler_[rarity] = (self.rarity_scaler_[rarity] + avg_price)/2 
-
+                    if not pd.isnull(avg_price):
+                        self.rarity_scaler_[rarity] = (self.rarity_scaler_[rarity]*3 + avg_price)/4 
+        print("rarity_scaler_ fit: \n:", self.rarity_scaler_)
         return self
 
     def transform(self, X, y_price):
         """ transforms price in dollars into unitless power metric (pegged to avg mythic price) """
         rarity_df = X.copy()
         y_power = np.ones(y_price.shape)
-
-        print("price:", y_price.shape)
-        print("power:", y_power.shape)
-        print("rarity:", rarity_df.shape)
 
         for rarity in self.rarity_baseline.keys():
             rare_mask = rarity_df['rarity']==rarity
