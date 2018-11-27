@@ -97,23 +97,41 @@ def test_model_comparison():
                                  cards_df, scorer, n_folds=2)
 
 def test_standard_normalizer():
-    """ Predicts Ixalan Prices for season 25. Trains on season 24 prices """ 
+    """ Predicts Ixalan Prices for season 25. Trains on seasons 1-24 prices for everything """ 
+
+    print("Getting standard format")
     scorer = rmlse_scorer
     std_sets, std_dates = get_standard_format()
     
+    print("Getting seasonal prices df")
     seasonal_prices_df = join_features_seasonal_prices()
-    clean_X = csv_cleaner(seasonal_prices_df)
+    clean_X, y_train = csv_cleaner(seasonal_prices_df, y_col='s24')
 
+    print("Cleaning X and Y")
     y_test = clean_X['s25']
-    y_train = clean_X['s24']
-    X = clean_X.drop(columns=['s24','s25','s26','s27','s28'])
+    X = clean_X.drop(columns=['s25','s26','s27','s28'])
     X = X[X['setname']!="Ixalan"]
     X = X[X['setname']!="Rivals of Ixalan"]
     X = X[X['setname']!="Dominaria"]
-
-    model = StandardNormalizerGBR(std_sets_df = std_sets)
-    model.fit(X, y)
-    print(model.score(X_test,y_test))
+    
+    pipe = Pipeline([
+        ('BoolToInt', BoolTransformer()),
+        ('CreatureFeature', CreatureFeatureTransformer()),
+        ('Planeswalker', PlaneswalkerTransformer()),
+        # ('AbilityCounts', AbilityCountsTransformer()),
+        ('Fillna', FillTransformer()),
+        ('CostIntensity', CostIntensityTransformer()),
+        ('DummifyType', TypelineTransformer()),
+        ('DummifyColorID', ColorIDTransformer()),
+        ('DropFeatures', DropFeaturesTransformer()),
+        ('TestFill', TestFillTransformer()),
+        ('StandardNormalizerGBR', StandardNormalizerGBR(std_sets_df = std_sets))
+    ])
+    
+    print("Fitting pipeline")
+    pipe.fit(X, y_train)
+    print("Scoring model on Ixalan")
+    print(pipe.score(clean_X[clean_X['setname']=="Ixalan"],y_test))
 
 if __name__ == "__main__":
     # run tessssts

@@ -462,26 +462,34 @@ class StandardNormalizerGBR(BaseEstimator, RegressorMixin):
         return y_pred
 
     def fit(self, X_train, y_train):
+        print("Entered fit method of SN-GBR")
         X = X_train.copy()
         y_price = y_train.copy()
 
         # get standard prices
+        print("Getting standard prices")
         std_prices_df = self.std_price_xfmr_.transform(X)
         
         # predict standard market size for next season and save as attribute
+        print("Predicting market size")
         self.pred_market_size_ = self._predict_next_standard_market(std_prices_df)
 
         # Transform prices to power
+        print("Transforming Price to Power")
         self.ptpt_ = PriceToPowerTransformer()
         y_power = self.ptpt_.fit_transform(std_prices_df, y_price)
 
         # log if applicable
+        print("Logging y")
         if self.log_y:
             y_power = np.log(y_power)
         
         # drop seasonal price features and fit GBR
+        print("Dropping seasonal price features and fitting GBR")
         X = self._drop_seasons(X)
         self.model.fit(X, y_power)
+        
+        print("Done fitting GBR")
 
         return self
 
@@ -489,15 +497,18 @@ class StandardNormalizerGBR(BaseEstimator, RegressorMixin):
         """ Predict from GBR and inverse transform log, power to price, and fit to market size before scoring """
         
         # Predict with model
+        print("Predicting power")
         y_pred_power = self.model.predict(X)
 
         if self.log_y:
             y_pred_power = np.exp(y_pred_power)
 
         # Convert back to price
+        print("Inverse transforming power to price")
         y_pred_price = self.ptpt_.inverse_transform(X, y_pred_power)
 
-        # Norm preds to price
+        # Norm preds to standard market size
+        print("Normalizing predictions to market size")
         set_price = self.pred_market_size_ / self.next_sets
         y_sum = y_pred_price.sum()
         norm = set_price/y_sum
@@ -505,7 +516,7 @@ class StandardNormalizerGBR(BaseEstimator, RegressorMixin):
 
         # Set floor to GBR predictions
         y_normed[y_normed<0.1]=0.1
-        
+
         return y_normed
 
     def score(self, X, y):
