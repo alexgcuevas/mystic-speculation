@@ -52,6 +52,17 @@ def one_hot(input_df, columns):
 
     return df
 
+def csv_cleaner(df, y_col='price'):
+    clean_df = df.copy()
+    # clean_df.drop(columns=['Unnamed: 0'], inplace=True)
+    clean_df.drop_duplicates(inplace=True)
+    # clean_df.set_index('id', inplace=True)
+
+    set_excluder = SetExclusionTransformer()
+    clean_df = set_excluder.transform(clean_df)
+    return clean_df.drop(columns=y_col, axis=1), clean_df[y_col]
+
+
 class OneHotTransformer(BaseEstimator, TransformerMixin):
     """
     One-hot encode features
@@ -244,16 +255,6 @@ class DropFeaturesTransformer(BaseEstimator, TransformerMixin):
         features = set(self.features_to_drop) and set(X.columns)
         df = X.drop(features, axis=1)
         return df
-
-def csv_cleaner(df, y_col='price'):
-    clean_df = df.copy()
-    # clean_df.drop(columns=['Unnamed: 0'], inplace=True)
-    clean_df.drop_duplicates(inplace=True)
-    # clean_df.set_index('id', inplace=True)
-
-    set_excluder = SetExclusionTransformer()
-    clean_df = set_excluder.transform(clean_df)
-    return clean_df.drop(columns=y_col, axis=1), clean_df[y_col]
 
 class SetExclusionTransformer(BaseEstimator, TransformerMixin):
     """Removes sets"""

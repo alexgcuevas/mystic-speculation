@@ -120,9 +120,9 @@ def test_standard_normalizer():
         ('Planeswalker', PlaneswalkerTransformer()),
         # ('AbilityCounts', AbilityCountsTransformer()),
         ('Fillna', FillTransformer()),
-        ('CostIntensity', CostIntensityTransformer()),
-        ('DummifyType', TypelineTransformer()),
-        ('DummifyColorID', ColorIDTransformer()),
+        # ('CostIntensity', CostIntensityTransformer()),
+        # ('DummifyType', TypelineTransformer()),
+        # ('DummifyColorID', ColorIDTransformer()),
         ('DropFeatures', DropFeaturesTransformer()),
         ('TestFill', TestFillTransformer()),
         ('StandardNormalizerGBR', StandardNormalizerGBR(std_sets_df = std_sets))
