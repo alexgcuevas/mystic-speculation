@@ -162,11 +162,12 @@ def test_Ixalan_baseline():
 def plot_Ixalan_model_baseline():
     """ Predicts Ixalan Prices for season 25 using SN-GBR, comparing to baseline""" 
     df = join_features_seasonal_prices()
+    df = df[df['setname']!="Dominaria"]
+    df = df[df['setname']!="Rivals of Ixalan"]
+  
     X, y = csv_cleaner(df,y_col=['s24','s25'])
 
     # Drop sets after Ixalan - cheating to count them!
-    X = X[X['setname']!="Dominaria"]
-    X = X[X['setname']!="Rivals of Ixalan"]
     
     # Setting Ixalan as test set
     ix_mask = X['setname']=="Ixalan"
@@ -193,7 +194,6 @@ def plot_Ixalan_model_baseline():
         ('StandardNormalizerGBR', StandardNormalizerGBR(std_sets_df = std_sets, log_y=True))
     ])
     # Drop seasons for baseline 
-    seasons = get_seasons(X)
     baseline = BaselineModel()
 
     print("Fitting Baseline Model")
@@ -202,18 +202,29 @@ def plot_Ixalan_model_baseline():
     print(baseline.score(X_test.drop(columns=get_seasons(X_test)),y_test))
 
     print("Fitting SN-GBR pipeline")
-    pipe.fit(X_train.drop(columns=['s25','s26','s27','s28']), y_train)
-    print("SN-GBR scor on Ixalan:")
-    print(pipe.score(X_test.drop(columns=['s25','s26','s27','s28']),y_test))
+    pipe.fit(X_train.drop(columns=['s26','s27','s28']), y_train)
+    print("SN-GBR score on Ixalan:")
+    print(pipe.score(X_test.drop(columns=['s26','s27','s28']),y_test))
     
     y_pred = baseline.predict(X_test.drop(columns=get_seasons(X_test)))
     baseline_df = format_results(X_test.drop(columns=get_seasons(X_test)), y_pred, y_test)
-    y_pred = pipe.predict(X_test.drop(columns=['s25','s26','s27','s28']))
+    y_pred = pipe.predict(X_test.drop(columns=['s26','s27','s28']))
     results_df = format_results(X_test.drop(columns=get_seasons(X_test)), y_pred, y_test)
 
+    title = "Standard Normalizer Gradient Boosted - Performance on Ixalan"
     plot_residuals_vs_baseline(results_df, baseline_df, title)
 
     print("SN-GBR feature importances: \n", pipe_feature_imports(pipe))
+
+def plot_random_prices(n=100):
+    df = combine_csv_rarities(price_type='seasonal_avg')
+    _, dates = get_standard_format_real()
+    seasons = [x for x in df.columns if x[1:].isnumeric()]
+    random_prices = df.sample(n)[seasons]
+    for price_row in random_prices.iterrows():
+        plt.plot_date(dates, price_row[1], '-', alpha=100/n)
+    plt.yscale('log')
+    plt.show()
 
 if __name__ == "__main__":
     # run tessssts
@@ -223,7 +234,10 @@ if __name__ == "__main__":
 
     # cards_df = combine_csv_rarities()
     # model_gauntlet(cards_df)
-    # test_Ixalan_baseline()
-    # test_standard_normalizer()
+    # # test_Ixalan_baseline()
+    # pipe = test_standard_normalizer()
+    # importances = SNGBR_feature_imports(pipe)
+    # print(importances)
 
-    plot_Ixalan_model_baseline():
+    # plot_Ixalan_model_baseline()
+    plot_random_prices(500)
