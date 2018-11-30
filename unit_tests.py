@@ -185,11 +185,11 @@ def plot_Ixalan_model_baseline():
         ('CreatureFeature', CreatureFeatureTransformer()),
         ('Planeswalker', PlaneswalkerTransformer()),
         ('AbilityCounts', AbilityCountsTransformer()),
-        ('Fillna', FillnaTransformer()),
+        ('Fillna', FillnaTransformer(is_seasonal=True)),
         ('CostIntensity', CostIntensityTransformer()),
         ('DummifyType', TypelineTransformer()),
         ('DummifyColorID', ColorIDTransformer()),
-        ('DropFeatures', DropFeaturesTransformer()),
+        ('DropFeatures', DropFeaturesTransformer(is_seasonal=True)),
         ('TestFill', TestFillTransformer()),
         ('StandardNormalizerGBR', StandardNormalizerGBR(std_sets_df = std_sets, log_y=True))
     ])
@@ -226,6 +226,18 @@ def plot_random_prices(n=100):
     plt.yscale('log')
     plt.show()
 
+def compare_to_craig():
+    craigs_df, cards = get_craigs_picks()
+
+    print(craigs_df[['before','after','craig_pred']])
+
+    pipe = test_standard_normalizer()
+
+    my_preds = pipe.predict(craigs_df)
+
+    craigs_df.head()
+    pass
+
 if __name__ == "__main__":
     # run tessssts
     # test_baseline_model()
@@ -235,9 +247,11 @@ if __name__ == "__main__":
     # cards_df = combine_csv_rarities()
     # model_gauntlet(cards_df)
     # # test_Ixalan_baseline()
-    # pipe = test_standard_normalizer()
+    pipe = test_standard_normalizer()
     # importances = SNGBR_feature_imports(pipe)
     # print(importances)
 
     # plot_Ixalan_model_baseline()
-    plot_random_prices(500)
+    # plot_random_prices(500)
+
+    # compare_to_craig()

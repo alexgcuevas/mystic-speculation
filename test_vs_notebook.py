@@ -162,4 +162,71 @@ plot_all_cards(rarities)
 plot_standard_market_size()
 plot_all_cards()
 plot_all_standard_cards()
-""" 
+
+
+"""
+Fuck Jupyter
+"""
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+import seaborn as sns
+import re
+
+from sklearn.ensemble import GradientBoostingRegressor
+from sklearn.pipeline import Pipeline
+from sklearn.model_selection import train_test_split
+
+from model.master_transmuter import *
+from model.models import *
+from scrape.scraper import *
+from query import *
+from unit_tests import *
+
+rarities = ['mythic','rare','uncommon','common']
+dfs = []
+for rarity in rarities:
+    dfs.append(pd.read_csv('data/all_vintage_cards-{}_recent.csv'.format(rarity)))
+    
+raw_df = pd.concat(dfs)
+raw_df.set_index('id',inplace=True)
+raw_df.drop(columns="Unnamed: 0", inplace=True)
+raw_df = raw_df[~raw_df.index.duplicated()]
+
+title = 'all rarities'
+
+X, y = csv_cleaner(raw_df)
+X_train, X_test, y_train, y_test = train_test_split(X,y,test_size=0.2, random_state=1)
+
+pipe, results_df, model_score = fit_refine_pipeline(X_train, X_test, y_train, y_test)
+print('{0} refined features score: {1}'.format(title,model_score))
+
+dummy_results_df, baseline_score = baseline_model(X_train, X_test, y_train, y_test)
+print('{0} baseline (log mean) score: {1}'.format(title,baseline_score))
+print('Model improvement over baseline (log mean score): {}'.format(baseline_score-model_score))
+print('Worst predicted cards :')
+results_df[['cardname','setname','y_pred','y_test','log_diff']].sort_values('log_diff', ascending=False).head(10)
+
+# Extract feature importances
+feature_importances = pipe_feature_imports(pipe)
+feature_importances[:10]
+
+# Plot residuals
+plot_residuals_vs_baseline(results_df,dummy_results_df, 'Refined feature GBR: '+title)
+plot_pred_hist(results_df['y_pred'],results_df['y_test'], 'Refined feature histogram: '+title)
+
+plot_residuals(results_df['y_pred'],results_df['y_test'], 'Refined feature GBR')
+
+
+X, y = csv_cleaner(raw_df)
+X_train, X_test, y_train, y_test = train_test_split(X,y,test_size=0.2, random_state=1)
+
+pipe, results_df, model_score = fit_basic_pipeline(X_train, X_test, y_train, y_test)
+print('{0} refined features score: {1}'.format(title,model_score))
+
+dummy_results_df, baseline_score = baseline_model(X_train, X_test, y_train, y_test)
+print('{0} baseline (log mean) score: {1}'.format(title,baseline_score))
+
+plot_residuals(results_df['y_pred'],results_df['y_test'], 'MVP GBR')
+
+

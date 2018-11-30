@@ -56,8 +56,8 @@ def csv_cleaner(df, y_col='price'):
     clean_df.drop_duplicates(inplace=True)
     # clean_df.set_index('id', inplace=True)
 
-    set_excluder = SetExclusionTransformer()
-    clean_df = set_excluder.transform(clean_df)
+    # set_excluder = SetExclusionTransformer()
+    # clean_df = set_excluder.transform(clean_df)
     return clean_df.drop(columns=y_col, axis=1), clean_df[y_col]
 
 def get_seasons(df):
@@ -117,12 +117,13 @@ class FillnaTransformer(BaseEstimator, TransformerMixin):
     Impute NaN values
     # TODO: Parameterize so values can be imputed with -1, mean, median, or mode.
     """
-    def __init__(self, fill_value=0):
+    def __init__(self, fill_value=0, is_seasonal=False):
         self.fill_value = fill_value
+        self.is_seasonal = is_seasonal
 
     def _get_seasons(self, df):
         """ finds seasons in columns of df and returns list of them """
-        seasons = [x for x in df.columns if x.strip('s').isnumeric()] 
+        seasons = [x for x in df.columns if x[1:].isnumeric()] 
         return seasons
 
     def fit(self, X, y=None): 
@@ -134,9 +135,12 @@ class FillnaTransformer(BaseEstimator, TransformerMixin):
         # TODO: make this fill dynamic for all columns?
         df = X.copy()
         # only fill non-seasonal columns
-        seasons = self._get_seasons(df)
-        non_seasons = list(set(df.columns) - set(seasons))
-        df[non_seasons] = df[non_seasons].fillna(self.fill_value, axis=1)
+        if self.is_seasonal:
+            seasons = self._get_seasons(df)
+            non_seasons = list(set(df.columns) - set(seasons))
+            df[non_seasons] = df[non_seasons].fillna(self.fill_value, axis=1)
+        else: 
+            df = df.fillna(self.fill_value, axis=1)
         return df
 
 class CostIntensityTransformer(BaseEstimator, TransformerMixin):
@@ -239,10 +243,9 @@ class DropFeaturesTransformer(BaseEstimator, TransformerMixin):
     """Select features."""
 
     # TODO: add parameterization of features for code reuse (or find a generic transformer)
-    def __init__(self):
+    def __init__(self, is_seasonal = False):
         self.features_to_drop = [
             'cardname'
-            # ,'setname'
             ,'type_line'
             ,'mana_cost'
             ,'oracle_text'
@@ -259,6 +262,9 @@ class DropFeaturesTransformer(BaseEstimator, TransformerMixin):
             ,'layout'
             # ,'price'
         ]
+        if not is_seasonal:
+            self.features_to_drop.append('setname')
+            self.features_to_drop.append('rarity')
 
     def fit(self, X, y=None):
         """Does not save state."""
@@ -266,8 +272,9 @@ class DropFeaturesTransformer(BaseEstimator, TransformerMixin):
 
     def transform(self, X):
         """'Return DataFrame containing only the configured features."""
+        df = X.copy()
         cols = list(set(self.features_to_drop) & set(X.columns))
-        df = X.drop(columns=cols)
+        df.drop(columns=cols, inplace=True)
         return df
 
 class SetExclusionTransformer(BaseEstimator, TransformerMixin):
@@ -294,7 +301,7 @@ class SetExclusionTransformer(BaseEstimator, TransformerMixin):
                 'Beatdown Box Set',
                 'Starter 2000',
                 'Starter 1999',
-                'Prerelease Events',
+                'Prerelease Events',    
                 'Release Events',
                 'Rivals of Ixalan',
 

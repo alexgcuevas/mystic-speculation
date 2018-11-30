@@ -10,6 +10,8 @@ from sklearn.base import BaseEstimator, TransformerMixin, RegressorMixin, clone
 from sklearn.metrics import make_scorer, mean_squared_log_error
 from sklearn.pipeline import Pipeline
 from sklearn.ensemble import GradientBoostingRegressor
+from sklearn.ensemble.partial_dependence import plot_partial_dependence
+from sklearn.ensemble.partial_dependence import partial_dependence
 from sklearn.model_selection import train_test_split
 from sklearn.model_selection import cross_val_score
 from sklearn.model_selection import GridSearchCV
@@ -49,13 +51,13 @@ def fit_basic_pipeline(X_train, X_test, y_train, y_test):
 
     # The set-up (you need this)
     pipe = Pipeline([
+        ('BoolToInt', BoolTransformer()),
         ('CreatureFeature', CreatureFeatureTransformer()),
         ('Planeswalker', PlaneswalkerTransformer()),
-        ('BoolToInt', BoolTransformer()),
         ('Fillna', FillnaTransformer()),
         ('CostIntensity', CostIntensityTransformer()),
+        # ('CreateDummies', CreateDummiesTransformer()),
         ('DropFeatures', DropFeaturesTransformer()),
-        ('CreateDummies', CreateDummiesTransformer()),
         ('TestFill', TestFillTransformer()),
         ('GradientBoostingRegressor', GradientBoostingRegressor())
     ])
@@ -68,25 +70,24 @@ def fit_basic_pipeline(X_train, X_test, y_train, y_test):
     y_pred = price_corrector(np.exp(y_pred_log))
 
     results_df = format_results(X_test, y_pred, y_test)
-    score = -rmlse(y_pred, y_test)
+    score = rmlse(y_pred, y_test)
 
     return pipe, results_df, score
 
 def plot_residuals(y_pred, y_test, title):
-    fig, axs = plt.subplots(1,2, figsize=(20,10))
+    fig, axs = plt.subplots(1,2, figsize=(10,5))
     lin_ax = axs[0]
     log_ax = axs[1]
 
-    lin_ax.scatter(y_test, y_pred, label='preds', alpha=0.5)
-    lin_ax.scatter(y_test, y_test, label='actuals', alpha=0.5)
+    lin_ax.scatter(y_test, y_pred, label='preds', alpha=0.2)
+    lin_ax.scatter(y_test, y_test, label='actuals', alpha=0.2)
     lin_ax.set_title('{} predictions vs actual'.format(title))
     lin_ax.set_ylabel('predicted prices')
     lin_ax.set_xlabel('actual prices')
     lin_ax.set_xlim(0,max(y_test.max(), y_pred.max()))
     lin_ax.set_ylim(0,max(y_test.max(), y_pred.max()))
 
-    log_ax.scatter(np.log(y_test+1), np.log(y_pred+1), label='log preds', alpha=0.5)
-    log_ax.scatter(np.log(y_test+1), np.log(y_test+1), label='log actuals', alpha=0.5)
+    log_ax.scatter(np.log(y_test+1), np.log(y_pred+1), label='log preds', alpha=0.1)
     log_ax.set_title('{} log predictions vs actual'.format(title))
     log_ax.set_ylabel('predicted log prices')
     log_ax.set_xlabel('actual log prices')
@@ -94,11 +95,13 @@ def plot_residuals(y_pred, y_test, title):
     log_ax.set_xlim(logs.min(),logs.max())
     log_ax.set_ylim(logs.min(),logs.max())
 
+    log_ax.plot(np.log(y_test+1), np.log(y_test+1), label='log actuals', color='orange')
     plt.legend()
+    fig.savefig(title+'.png', bbox_inches='tight')
     plt.show()
 
 def plot_residuals_vs_baseline(results_df, baseline_df, title):
-    fig, axs = plt.subplots(1,2, figsize=(20,10))
+    fig, axs = plt.subplots(1,2, figsize=(10,5))
     lin_ax = axs[0]
     log_ax = axs[1]
 
@@ -116,8 +119,7 @@ def plot_residuals_vs_baseline(results_df, baseline_df, title):
     lin_ax.set_ylim(0,max(y_test.max(), y_pred.max()))
 
     log_ax.scatter(np.log(y_test+1), np.log(y_pred+1), label='log preds', alpha=0.5)
-    log_ax.scatter(np.log(y_test+1), np.log(y_test+1), label='log actuals', alpha=0.5)
-    log_ax.scatter(np.log(y_test+1), np.log(y_base+1), label='baseline', alpha=0.5)        
+    log_ax.scatter(np.log(y_test+1), np.log(y_base+1), label='baseline', alpha=0.5, color='green')        
     log_ax.set_title('{} log predictions vs actual'.format(title))
     log_ax.set_ylabel('predicted log prices')
     log_ax.set_xlabel('actual log prices')
@@ -125,8 +127,14 @@ def plot_residuals_vs_baseline(results_df, baseline_df, title):
     log_ax.set_xlim(logs.min(),logs.max())
     log_ax.set_ylim(logs.min(),logs.max())
 
+
+    log_ax.plot(np.log(y_test+1), np.log(y_test+1), label='log actuals', color='orange')
+
     lin_ax.legend()
     log_ax.legend()
+    filename = title+'.png'
+    fig.savefig(filename, bbox_inches='tight')
+
     plt.show()
 
 def plot_pred_hist(y_pred, y_test, title):
@@ -137,6 +145,24 @@ def plot_pred_hist(y_pred, y_test, title):
     plt.xlabel('prices')
     plt.legend()
     plt.show()
+
+def pipe_feature_imports(pipe):
+    """
+    Takes in pipeline with decision tree as estimator,
+    returns dataframe of feature importances
+    """
+    model = pipe.steps[-1][1]
+    features = list(pipe.steps[-2][1].train_columns_)
+    feature_importances = np.round(model.feature_importances_,4)
+    feature_importances = np.array([features, feature_importances]).T
+    return pd.DataFrame(feature_importances[feature_importances[:,1].argsort()[::-1]], columns=['feature','importance'])
+
+def SNGBR_feature_imports(pipe):
+    model = pipe.steps[-1][1].model
+    features = list(pipe.steps[-1][1].train_columns_)
+    feature_importances = np.round(model.feature_importances_,4)
+    feature_importances = np.array([features, feature_importances]).T
+    return pd.DataFrame(feature_importances[feature_importances[:,1].argsort()[::-1]], columns=['feature','importance'])
 
 def rmlse(y_pred,y_test):
     """ Calculates Room Mean Log Squared Error of prediction """
@@ -172,7 +198,9 @@ def fit_refine_pipeline(X_train, X_test, y_train, y_test):
     y_train_log = np.log(y_train)
     # y_test_log = np.log(y_test)
 
+    print("starting fit refine pipeline fitting")
     pipe.fit(X_train, y_train_log)
+    print("finished fitting")
     y_pred_log = pipe.predict(X_test)
     y_pred = price_corrector(np.exp(y_pred_log))
 
@@ -183,18 +211,6 @@ def fit_refine_pipeline(X_train, X_test, y_train, y_test):
     score = -rmlse(y_pred, y_test)
 
     return pipe, results_df, score
-
-def pipe_feature_imports(pipe):
-    """
-    Takes in pipeline with decision tree as estimator,
-    returns dataframe of feature importances
-    """
-    model = pipe.steps[-1][1]
-    features = list(pipe.steps[-2][1].train_columns)
-    feature_importances = np.round(model.feature_importances_,4)
-
-    feature_importances = np.array([features, feature_importances]).T
-    return pd.DataFrame(feature_importances[feature_importances[:,1].argsort()[::-1]], columns=['feature','importance'])
 
 # TODO NEED TO WRITE PROPER MODELS
 def run_models_against_baseline(models, cards_df, scorer, n_folds=5):
@@ -259,7 +275,7 @@ def GBR_V1():
         ('CreatureFeature', CreatureFeatureTransformer()),
         ('Planeswalker', PlaneswalkerTransformer()),
         ('AbilityCounts', AbilityCountsTransformer()),
-        ('Fillna', FillTransformer()),
+        ('Fillna', FillnaTransformer()),
         ('CostIntensity', CostIntensityTransformer()),
         ('CreateDummies', CreateDummiesTransformer()),
         ('DummifyType', TypelineTransformer()),
@@ -324,7 +340,6 @@ class BaselineModel(BaseEstimator, RegressorMixin):
         y_pred = self.predict(X)
         return -rmlse(y_pred, y)
 
-# TODO custom scorer, predict floor
 class SpotPriceGBR(BaseEstimator, RegressorMixin):
     """ Model using only recent prices (done already; need to formalize)"""
     def __init__(self, model=GradientBoostingRegressor(), base_weight=0, log_y=False):
@@ -473,11 +488,9 @@ class StandardNormalizerGBR(BaseEstimator, RegressorMixin):
         # predict standard market size for next season and save as attribute
         print("Predicting market size")
         self.pred_market_size_ = self._predict_next_standard_market(std_prices_df)
-        print("predicted market size: {}".format(self.pred_market_size_))
 
         # Transform prices to power
         print("Transforming Price to Power")
-        print("y_price describe: \n", stats.describe(y_price))
         self.ptpt_ = PriceToPowerTransformer()
         y_power = self.ptpt_.fit_transform(std_prices_df, y_price)
 
@@ -490,6 +503,7 @@ class StandardNormalizerGBR(BaseEstimator, RegressorMixin):
         print("Dropping seasonal price features and fitting GBR")
         X = self._drop_seasons(X)
         X.drop(columns=['setname','rarity'], inplace=True)
+        self.train_columns_ = list(X.columns)
         self.model.fit(X, y_power)
         
         print("Done fitting GBR")
