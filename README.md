@@ -8,14 +8,14 @@ This project aims to predict prices of Magic: The Gathering cards using card fea
 
 ## Structure
 
-* scrape/ contains code to access card feature data from Scryfall's RESTful API, and for scraping price history data. 
-* data/ is where local card data is downloaded to; all of the contents here can be repopulated by running scraper.py and query.py methods.
-* model/ contains pipelines, transformers, models, and plotting methods
-* figures/ is a place to store output plots from visualizations and model results
-* root
-  * query contains code to query from the price history database to set up local csvs, etc. for manipulation in pandas and model training.
-  * test_vs_notebook is a scratchpad where I prototyped and tested methods, queries, models etc. 
-  * unit_tests contains structured tests of methods, as well as code to run and visualize models of particular data. 
+* code(scrape/) contains code to access card feature data from Scryfall's API and for scraping price history from the web
+* code(data/) where local card data is downloaded to, generally in csv format
+* code(model/) contains pipelines, transformers, models, and plotting methods
+* code(figures/) is a place to store output plots from visualizations and model results
+* code(root)
+  * code(query.py) contains code to query from the price history database to set up local csvs, etc. for manipulation in pandas and model training.
+  * code(test_vs_notebook.py) is a scratchpad where I prototyped and tested methods, queries, models etc. in visual studio 
+  * code(unit_tests.py) contains structured tests of methods, as well as code to run and visualize models of particular data. 
 
 
 ## How-to
@@ -30,14 +30,18 @@ My best predictive model (RMLSE = 0.3 tested on Ixalan's cards, using cards prin
 * Tournament seasonality
 * Rarity
 * Engineered features
-  * Converted mana cost : average p/t ratio { eg, Ernam would be cmc(3F) / avg(4,5) = 4/4.5 = 0.89 }
-  * # abilities (activated, triggered, total)
+  * Converted mana cost : average p/t ratio
+    * eg Ernam would be cmc(3F) / avg(4,5) = 4/4.5 = 0.89
+  * number of abilities
+    * activated
+    * triggered
+    * total ability blocks
 
 The tournament seasonality represented how prices of cards vary with the Standard format, the hypothesis being that the mtg "market" has a "segment" which can offer a certain support in terms of total cost of legal cards, and I normalized my predicted set prices based on a prediction of what total set price the Standard format could bear at time t + 1. 
 
 The rarity represents economic scarcity of cards, which is built into the supply; I started with baseline figures for these and updated them with training data, increasing weights for data closer to the present, and finally scaled price predictions according to this, transforming them instead into a "power" metric. This seasonal trend & rarity normalized power metric is what my model actually predicts, and predictions are transformed into prices afterwards. 
 
-### Notes
+### Future Work
 
 There is much more that could be done to improve this project; both to improve the model, and to improve accessibility of the code for interested users to work off of. 
 
