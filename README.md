@@ -1,6 +1,6 @@
-![title](http://gatherer.wizards.com/Handlers/Image.ashx?multiverseid=126156&type=card)
-
 # Mystic Speculation
+_Predicting Magic: The Gathering card prices with card feature data and seasonal price trends_
+![title](http://gatherer.wizards.com/Handlers/Image.ashx?multiverseid=126156&type=card)
 
 ## Overview
 
@@ -8,14 +8,14 @@ This project aims to predict prices of Magic: The Gathering cards using card fea
 
 ## Structure
 
-* code(scrape/) contains code to access card feature data from Scryfall's API and for scraping price history from the web
-* code(data/) where local card data is downloaded to, generally in csv format
-* code(model/) contains pipelines, transformers, models, and plotting methods
-* code(figures/) is a place to store output plots from visualizations and model results
-* code(root)
-  * code(query.py) contains code to query from the price history database to set up local csvs, etc. for manipulation in pandas and model training.
-  * code(test_vs_notebook.py) is a scratchpad where I prototyped and tested methods, queries, models etc. in visual studio 
-  * code(unit_tests.py) contains structured tests of methods, as well as code to run and visualize models of particular data. 
+* `scrape/` contains code to access card feature data from Scryfall's API and for scraping price history from the web
+* `data/` where local card data is downloaded to, generally in csv format
+* `model/` contains pipelines, transformers, models, and plotting methods
+* `figures/` is a place to store output plots from visualizations and model results
+* `root`
+  * `query.py` contains code to query from the price history database to set up local csvs, etc. for manipulation in pandas and model training.
+  * `test_vs_notebook.py` is a scratchpad where I prototyped and tested methods, queries, models etc. in visual studio 
+  * `unit_tests.py` contains structured tests of methods, as well as code to run and visualize models of particular data. 
 
 
 ## How-to
