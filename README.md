@@ -1,5 +1,7 @@
 # Mystic Speculation
 _Predicting Magic: The Gathering card prices with card feature data and seasonal price trends_
+
+
 ![title](http://gatherer.wizards.com/Handlers/Image.ashx?multiverseid=126156&type=card)
 
 ## Overview
