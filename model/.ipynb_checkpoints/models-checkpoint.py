@@ -51,13 +51,13 @@ def fit_basic_pipeline(X_train, X_test, y_train, y_test):
 
     # The set-up (you need this)
     pipe = Pipeline([
-        ('BoolToInt', BoolTransformer()),
         ('CreatureFeature', CreatureFeatureTransformer()),
         ('Planeswalker', PlaneswalkerTransformer()),
+        ('BoolToInt', BoolTransformer()),
         ('Fillna', FillnaTransformer()),
         ('CostIntensity', CostIntensityTransformer()),
-        # ('CreateDummies', CreateDummiesTransformer()),
         ('DropFeatures', DropFeaturesTransformer()),
+        ('CreateDummies', CreateDummiesTransformer()),
         ('TestFill', TestFillTransformer()),
         ('GradientBoostingRegressor', GradientBoostingRegressor())
     ])
@@ -70,24 +70,25 @@ def fit_basic_pipeline(X_train, X_test, y_train, y_test):
     y_pred = price_corrector(np.exp(y_pred_log))
 
     results_df = format_results(X_test, y_pred, y_test)
-    score = rmsle(y_pred, y_test)
+    score = -rmsle(y_pred, y_test)
 
     return pipe, results_df, score
 
 def plot_residuals(y_pred, y_test, title):
-    fig, axs = plt.subplots(1,2, figsize=(10,5))
+    fig, axs = plt.subplots(1,2, figsize=(20,10))
     lin_ax = axs[0]
     log_ax = axs[1]
 
-    lin_ax.scatter(y_test, y_pred, label='preds', alpha=0.2)
-    lin_ax.scatter(y_test, y_test, label='actuals', alpha=0.2)
+    lin_ax.scatter(y_test, y_pred, label='preds', alpha=0.5)
+    lin_ax.scatter(y_test, y_test, label='actuals', alpha=0.5)
     lin_ax.set_title('{} predictions vs actual'.format(title))
     lin_ax.set_ylabel('predicted prices')
     lin_ax.set_xlabel('actual prices')
     lin_ax.set_xlim(0,max(y_test.max(), y_pred.max()))
     lin_ax.set_ylim(0,max(y_test.max(), y_pred.max()))
 
-    log_ax.scatter(np.log(y_test+1), np.log(y_pred+1), label='log preds', alpha=0.1)
+    log_ax.scatter(np.log(y_test+1), np.log(y_pred+1), label='log preds', alpha=0.5)
+    log_ax.scatter(np.log(y_test+1), np.log(y_test+1), label='log actuals', alpha=0.5)
     log_ax.set_title('{} log predictions vs actual'.format(title))
     log_ax.set_ylabel('predicted log prices')
     log_ax.set_xlabel('actual log prices')
@@ -95,13 +96,11 @@ def plot_residuals(y_pred, y_test, title):
     log_ax.set_xlim(logs.min(),logs.max())
     log_ax.set_ylim(logs.min(),logs.max())
 
-    log_ax.plot(np.log(y_test+1), np.log(y_test+1), label='log actuals', color='orange')
     plt.legend()
-    fig.savefig(title+'.png', bbox_inches='tight')
     plt.show()
 
 def plot_residuals_vs_baseline(results_df, baseline_df, title):
-    fig, axs = plt.subplots(1,2, figsize=(10,5))
+    fig, axs = plt.subplots(1,2, figsize=(20,10))
     lin_ax = axs[0]
     log_ax = axs[1]
 
@@ -119,7 +118,8 @@ def plot_residuals_vs_baseline(results_df, baseline_df, title):
     lin_ax.set_ylim(0,max(y_test.max(), y_pred.max()))
 
     log_ax.scatter(np.log(y_test+1), np.log(y_pred+1), label='log preds', alpha=0.5)
-    log_ax.scatter(np.log(y_test+1), np.log(y_base+1), label='baseline', alpha=0.5, color='green')        
+    log_ax.scatter(np.log(y_test+1), np.log(y_test+1), label='log actuals', alpha=0.5)
+    log_ax.scatter(np.log(y_test+1), np.log(y_base+1), label='baseline', alpha=0.5)        
     log_ax.set_title('{} log predictions vs actual'.format(title))
     log_ax.set_ylabel('predicted log prices')
     log_ax.set_xlabel('actual log prices')
@@ -127,14 +127,8 @@ def plot_residuals_vs_baseline(results_df, baseline_df, title):
     log_ax.set_xlim(logs.min(),logs.max())
     log_ax.set_ylim(logs.min(),logs.max())
 
-
-    log_ax.plot(np.log(y_test+1), np.log(y_test+1), label='log actuals', color='orange')
-
     lin_ax.legend()
     log_ax.legend()
-    filename = title+'.png'
-    fig.savefig(filename, bbox_inches='tight')
-
     plt.show()
 
 def plot_pred_hist(y_pred, y_test, title):
@@ -198,9 +192,7 @@ def fit_refine_pipeline(X_train, X_test, y_train, y_test):
     y_train_log = np.log(y_train)
     # y_test_log = np.log(y_test)
 
-    print("starting fit refine pipeline fitting")
     pipe.fit(X_train, y_train_log)
-    print("finished fitting")
     y_pred_log = pipe.predict(X_test)
     y_pred = price_corrector(np.exp(y_pred_log))
 

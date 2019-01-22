@@ -28,7 +28,7 @@ This project aims to predict prices of Magic: The Gathering cards using card fea
 
 ## Findings
 
-My best predictive model (RMLSE = 0.3 tested on Ixalan's cards, using cards printed before that) were these determinants of price:
+My best predictive model (rmsle = 0.3 tested on Ixalan's cards, using cards printed before that) were these determinants of price:
 * Tournament seasonality
 * Rarity
 * Engineered features

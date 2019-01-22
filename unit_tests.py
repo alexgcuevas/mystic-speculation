@@ -72,7 +72,7 @@ def test_SpotPriceByRarityGBR():
 
 def test_model_comparison():
     cards_df = combine_csv_rarities().sample(100)
-    scorer = rmlse_scorer
+    scorer = rmsle_scorer
     
     model_a = SpotPriceGBR()
     modelname_a = "SpotPriceGBR"
@@ -100,7 +100,7 @@ def test_standard_normalizer():
     """ Predicts Ixalan Prices for season 25. Trains on seasons 1-24 prices for everything """ 
 
     print("Getting standard format")
-    scorer = rmlse_scorer
+    scorer = rmsle_scorer
     std_sets, std_dates = get_standard_format()
     
     print("Getting seasonal prices df")
